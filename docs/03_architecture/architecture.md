@@ -15,6 +15,7 @@ Elsewhere — модульный монолит на Rails с отдельным
 Общая база полезна, потому что версия Future, её цена, Match и Delta должны сохраняться согласованно.
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#fffdf8","primaryTextColor":"#1d2925","primaryBorderColor":"#174c3b","secondaryColor":"#ebe7dc","tertiaryColor":"#f3f0e8","lineColor":"#65706b","textColor":"#1d2925","noteBkgColor":"#ebe7dc","noteTextColor":"#3d4a45","actorBkg":"#fffdf8","actorBorder":"#174c3b","fontFamily":"Inter"}}}%%
 graph TB
     U[Путешественник] --> W[React + TypeScript]
     W -->|OpenAPI| API[Rails API]
