@@ -5,8 +5,6 @@ require_relative "../elsewhere/schema"
 
 module AI
   module Task
-    # Every call returns an Outcome, never a bare value: the fallback is a real schema-valid value and would
-    # otherwise be indistinguishable from a model answer.
     Outcome = Struct.new(:value, :degraded, :reason, keyword_init: true) do
       def degraded?; degraded; end
     end
@@ -56,7 +54,6 @@ module AI
       reset_circuit!
     end
 
-    # Delegated to Elsewhere::Schema: two validators for the same job would drift apart.
     def validate!(value, schema)
       return value unless schema
 
@@ -95,7 +92,6 @@ module AI
       Outcome.new(value: result, degraded: true, reason: reason)
     end
 
-    # Schema-derived neutrals keep a broken fallback from turning model unavailability into an error.
     def neutral_value(schema)
       return {} unless schema
       return schema["enum"].first if schema["enum"]&.any?

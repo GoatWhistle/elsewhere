@@ -1,4 +1,3 @@
-// Contract-shaped development responses for the frozen OpenAPI resources.
 import { http, HttpResponse } from "msw";
 import type {
   Delta,
@@ -160,7 +159,6 @@ export const handlers = [
       return problemResponse({ title: "Нечего симулировать", status: 422, detail: "Передайте adjustments или instruction." });
     }
 
-    // One deliberate dead end so the no-solution path is reachable from the UI rather than only in theory.
     if (instruction && /невозможн|дешевле в два раза/i.test(instruction)) {
       return HttpResponse.json(
         completedJob("simulate", {
@@ -202,8 +200,6 @@ export const handlers = [
   }),
 ];
 
-// The mock settles jobs immediately. Polling still has to work, so the job is stored and readable by id —
-// a client that skipped the poll would pass here and fail against the real backend.
 function completedJob(kind: Job["kind"], result: Job["result"]): Job {
   const job: Job = {
     id: jobId(nextJobNumber++),
@@ -221,14 +217,12 @@ function jobId(sequence: number) {
   return `9${sequence.toString(16).padStart(7, "0")}${SESSION_ID.slice(8)}`;
 }
 
-
 function createSessionId(sequence: number) {
   if (sequence === 1) return SESSION_ID;
   return `${sequence.toString(16).padStart(8, "0")}${SESSION_ID.slice(8)}`;
 }
 
 function travelDnaVersionId(sessionId: string, version: number) {
-  // Keep IDs UUID-shaped and derive them from both session and version.
   return `${sessionId.slice(0, -12)}${version.toString(16).padStart(12, "0")}`;
 }
 
@@ -417,10 +411,6 @@ function isOptionalBudget(value: unknown) {
   );
 }
 
-// A forecast that exercises the honest cases on purpose: one inference-grade risk with a mitigation, one
-// derived metric, and five types reported as unassessed with a reason. Four of the nine can only be evidenced
-// by review text, which this product does not have (C-05) — the UI has to make that visible, so the mock
-// must produce it.
 function fixtureForecast(future: Future): Forecast {
   const nearSea = (future.accommodation.distance_to_sea_m ?? 9_999) < 400;
 
@@ -482,8 +472,6 @@ function fixtureForecast(future: Future): Forecast {
   };
 }
 
-// A simulated child. Immutable by construction: a new id, parent_id set, and a delta whose items sum exactly
-// to the price change — the arithmetic the UI is meant to show has to add up in the fixtures too.
 function simulatedChild(parent: Future, dimensions: string[]): Future {
   const relaxed = (dimensions[0] ?? "sea_access") as Delta["items"][number]["relaxed_dimension"];
   const accommodationSaving = 830_000;
@@ -535,8 +523,6 @@ function simulatedChild(parent: Future, dimensions: string[]): Future {
   };
 }
 
-// Applying a mitigation is a simulation too (DEC-022 / the Forecast doc): it produces a new version with a
-// delta, not an edit in place. Here it costs money and removes the risk it was proposed for.
 function mitigatedChild(parent: Future, riskId: string): Future {
   const cost = 340_000;
   const components = parent.price.components.map((component) => (

@@ -3,23 +3,14 @@ require_relative "ors"
 require_relative "ohsome"
 
 module Supply
-  # Per-property geo features, computed once from the OSM extract. Precomputed, never per request: a
-  # generation scores 24 candidates and PostGIS on that path would make every Future wait. Walk isochrones and
-  # airport drive time need ORS; without a key they come back absent with a reason, not substituted.
   module GeoFeatures
     RADIUS_M = 500
 
-    # POI density: raw count per km², plus a 0–1 figure as `d/(d+K)` — half-saturation, not a capped ratio.
-    # A capped ratio pinned 148 of 408 properties at exactly 1.0 against a 300/km² reference. This curve is
-    # monotone over the observed range (0 to 2 028/km²) and never reaches 1. K is fixed, never the corpus
-    # median: a moving denominator would rescore every Future ever generated.
     DENSITY_HALF_SATURATION_PER_KM2 = 200.0
     CIRCLE_KM2 = (Math::PI * (RADIUS_M / 1000.0)**2)
 
     EATING = %w[restaurant cafe bar fast_food pub bakery biergarten food_court].freeze
 
-    # A metric circle in Web Mercator. Mercator stretches distance by 1/cos(latitude), so the radius is
-    # divided by it going in and lengths multiplied coming out — exact enough over 500 m, no per-city projection.
     BUFFER_MERC = "ST_Buffer(ST_Transform(pts.geom, 3857), #{RADIUS_M} / COS(RADIANS(ST_Y(pts.geom))))".freeze
 
     Summary = Struct.new(:properties, :cities, :computed, :ors_calls, :unassessed, keyword_init: true) do
@@ -46,7 +37,6 @@ module Supply
       summary
     end
 
-    # One query per city, not per property: the same index scans either way, but one round trip instead of sixty.
     def measure(city_code)
       connection.select_all(sanitize(<<~SQL, city_code)).to_a
         WITH pts AS (
@@ -145,7 +135,6 @@ module Supply
                            to: { lat: row["lat"], lon: row["lon"] })
     end
 
-    # Everything the pipeline knows about one property, as Supply::Geo hands it out.
     def for_property(property_id)
       record = PropertyGeoFeatureRecord.joins(:property).find_by(properties: { catalogue_id: property_id })
       return nil unless record
@@ -163,14 +152,12 @@ module Supply
         "airport_distance_m" => record.airport_distance_m,
         "airport_name" => record.airport_name,
         "airport_transfer_min" => record.airport_transfer_min,
-        # Absent fields say why, so scoring a missing dimension as neutral is a deliberate act.
         "unassessed" => record.unassessed,
         "computed_at" => record.computed_at&.iso8601,
         "freshness" => "cached"
       }
     end
 
-    # Destination-level geo, computed on demand: one indexed row per city, too cheap to be worth staling.
     def for_destination(city_code)
       row = connection.select_one(sanitize(<<~SQL, city_code))
         WITH centre AS (
@@ -205,9 +192,6 @@ module Supply
       }
     end
 
-    # An independent check on the number "sea access" rests on. If the nearest coastline is D metres away, a
-    # square of half-width just under D/√2 must hold no coastline and one of half-width 1.2·D must hold some.
-    # ohsome answers both from its own copy of OSM, so no geometry endpoint (which answers 403) is needed.
     def verify_sea_distance(property_id)
       features = for_property(property_id)
       distance = features && features["distance_to_sea_m"]

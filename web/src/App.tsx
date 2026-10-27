@@ -62,8 +62,6 @@ export function App() {
     }
   };
 
-  // The forecast belongs to a specific version of a Future, so it is refetched whenever the chosen version
-  // changes — a simulation produces a new version, and carrying the old risks across would be a lie.
   useEffect(() => {
     if (!chosen) return;
 
@@ -84,8 +82,6 @@ export function App() {
     [chosen],
   );
 
-  // A simulation never edits a Future; it produces a new version. The chosen version moves forward, and the
-  // list keeps the original so the user can still see what they came from.
   const handleSimulated = useCallback((next: Future) => setChosen(next), []);
 
   const handleFixRisk = useCallback(async (riskId: string, mitigationId: string) => {

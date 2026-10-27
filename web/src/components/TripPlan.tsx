@@ -6,9 +6,6 @@ export type TripPlanProps = {
   future: Future;
 };
 
-// A Future card exists to be compared against two others at a glance. This screen exists to be read
-// before acting: one trip, in the order it happens, at reading density.
-
 const COMPONENT_LABELS: Record<PriceComponent["kind"], string> = {
   travel: "Перелёт",
   accommodation: "Проживание",
@@ -23,9 +20,6 @@ const TRANSFER_LABELS: Record<Logistics["airport_transfer"]["mode"], string> = {
   walk: "пешком",
 };
 
-// Where each number comes from, stated per component. DEC-029: only the accommodation *base* was
-// observed — the seasonal factor is our hypothesis, and saying otherwise would be the one dishonest
-// thing this product can do.
 const MODELED_BASIS: Record<PriceComponent["kind"], string> = {
   travel: "Смоделировано нами — это не тариф, который кто-то показал.",
   accommodation:
@@ -48,7 +42,6 @@ const MILLISECONDS_PER_DAY = 86_400_000;
 export function TripPlan({ future }: TripPlanProps) {
   const isOutdated = useOutdated(future.expires_at);
   const components = future.price.components;
-  // The total is not renderable without its observed/modeled split (DEC-031).
   const hasOriginSplit = components.length > 0 && components.every((component) => Boolean(component.fulfilment));
   const split = hasOriginSplit ? originSplit(components, future.price.total.currency) : null;
   const nights = nightsBetween(future.check_in, future.check_out);
@@ -363,7 +356,6 @@ function observationNote(component: PriceComponent) {
   return component.as_of ? ` · рассчитано на ${formatDateTime(component.as_of)}` : " · число не наблюдалось";
 }
 
-// The plan is marked outdated the moment it passes expires_at, including while it sits on screen (DEC-032).
 function useOutdated(expiresAt: string) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -379,7 +371,6 @@ function useOutdated(expiresAt: string) {
 }
 
 function originSplit(components: PriceComponent[], currency: string) {
-  // Only add up numbers that are in the same currency; a mixed-currency sum would be a made-up number.
   if (!components.every((component) => component.amount.currency === currency)) return null;
 
   return components.reduce(

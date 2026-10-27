@@ -1,13 +1,9 @@
 module Foresight
   module Rules
-    # Whether the weather the traveller gets is the weather they asked for. `derived_metric`: thirty years of
-    # measurement stand behind the normal, but the mismatch is our comparison against a stated preference.
-    # A normal is not a forecast, and the statement says so.
     module WeatherMismatch
       RISK_TYPE = "weather_mismatch".freeze
       DIMENSION = "climate_warm".freeze
 
-      # Below 20 °C a beach holiday is not the one that was booked; below 15 °C it is a different trip (OQ-D).
       WARM_THRESHOLD_C = 20.0
       COOL_THRESHOLD_C = 24.0        # for a traveller who explicitly did not want heat
       WET_MONTH_RAIN_DAYS = 12.0
@@ -15,7 +11,6 @@ module Foresight
 
       module_function
 
-      # `target` is the stated climate preference; without a Travel DNA the rule assumes the trip means warm.
       def call(evidence, target: "warm")
         months = evidence.months
         temperatures = months.map { |month| evidence.climate_value("temp_mean_c", month).to_f }
@@ -81,7 +76,6 @@ module Foresight
         values.sum / values.length
       end
 
-      # Temperature alone is a thinner claim than temperature plus rain plus sea.
       def completeness(evidence, months)
         available = %w[temp_mean_c rain_days].count { |field| months.all? { |m| evidence.climate_value(field, m) } }
         available += 1 if sea_temperature(evidence, months)

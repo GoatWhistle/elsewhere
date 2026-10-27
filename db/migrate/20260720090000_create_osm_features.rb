@@ -1,9 +1,5 @@
 class CreateOsmFeatures < ActiveRecord::Migration[8.1]
   def change
-    # One table, not one per layer: everything from OSM is an id, some tags and a geometry, always asked the
-    # same question. `layer` records what a feature was imported for, so an import is replaced one layer at a
-    # time. No ActiveRecord model on purpose — without the postgis adapter gem a model announces "unknown OID"
-    # for the geometry column on every boot, and the import writes in bulk while readers use PostGIS functions.
     create_table :osm_features do |t|
       t.string :city_code, null: false      # which corpus extract this came from
       t.string :layer, null: false          # place | aerodrome | poi | road | coastline
@@ -25,7 +21,5 @@ class CreateOsmFeatures < ActiveRecord::Migration[8.1]
       end
     end
 
-    # Where a destination's centre came from is already recorded (A-1 wrote "property_centroid"); the OSM
-    # import replaces it with "osm_place" when it finds the place node.
   end
 end

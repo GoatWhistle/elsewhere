@@ -1,7 +1,4 @@
 module Planning
-  # Natural language into adjustments. The model maps an instruction onto a closed vocabulary and produces no
-  # number: the dimension comes from the taxonomy, the direction is one of two words, and the step is
-  # DEC-025's, applied here. The fallback is a lexicon over the user's own words.
   module Instructions
     SCHEMA = {
       "type" => "object", "additionalProperties" => false,
@@ -20,7 +17,6 @@ module Planning
       "required" => %w[adjustments protect_important]
     }.freeze
 
-    # phrase => [dimension, direction]
     PATTERNS = [
       [/дешевл|подешевл|сэконом|бюджетн|снизь\s+цен/i, ["total_budget", "decrease"]],
       [/дорож|комфортн|получше|люкс/i, ["comfort", "increase"]],
@@ -32,7 +28,6 @@ module Planning
       [/пешк|прогул/i, ["walkability", "increase"]]
     ].freeze
 
-    # "…without damaging anything important" is what turns ε into a constraint, so it is read explicitly.
     PROTECT = /без\s+ущерб|не\s+жертв|ничего\s+важн|не\s+ломая/i
 
     module_function
@@ -64,7 +59,6 @@ module Planning
     end
   end
 
-  # DEC-025's slider semantics, applied to a Travel DNA. Every number here is the decision's, not a model's.
   module Adjustments
     BUDGET_STEP = 0.08          # cheaper ↔ more comfortable moves the target total by 8%
     LEVEL_STEP = 0.2            # quiet ↔ lively and city ↔ nature move a target by 0.2
@@ -73,7 +67,6 @@ module Planning
 
     def step_for(dimension) = dimension == "total_budget" ? BUDGET_STEP : LEVEL_STEP
 
-    # Returns a new element set; the original is never touched.
     def apply(elements, adjustments)
       adjustments.reduce(elements.map(&:dup)) { |current, adjustment| apply_one(current, adjustment) }
     end
@@ -103,12 +96,10 @@ module Planning
       end
     end
 
-    # A budget moves by a percentage of itself; a 0–1 level moves by the step itself.
     def scale(target) = target.abs > 1 ? target.abs : 1.0
     def lower(element) = element["dimension"] == "total_budget" ? 0 : 0.0
     def upper(element) = element["dimension"] == "total_budget" ? Float::INFINITY : 1.0
 
-    # A slider may name a dimension the DNA does not have yet.
     def ensure_present(elements, dimension, direction, step)
       return elements if elements.any? { |element| element["dimension"] == dimension }
 

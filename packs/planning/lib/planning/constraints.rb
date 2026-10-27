@@ -2,10 +2,6 @@ require "date"
 require_relative "taxonomy"
 
 module Planning
-  # Hard constraints: deterministic and disqualifying. A violation removes a candidate and never lowers a
-  # score — blurring that is how "up to 180 000 ₽" becomes "we found one at 240 000 but it scored well".
-  # Only five may be hard: total budget, dates, trip length, party and `car_free`. Let "quiet" be hard and the
-  # result set is empty with nobody able to say why.
   module Constraints
     ENFORCEABLE = %w[total_budget dates trip_length car_free].freeze
 
@@ -40,7 +36,6 @@ module Planning
       )
     end
 
-    # An inferred hard constraint waits for confirmation: otherwise it cuts destinations on something unsaid.
     def enforceable(element, unenforced)
       return nil unless element
 
@@ -62,9 +57,6 @@ module Planning
       { from: Date.parse(earliest.to_s), to: Date.parse(latest.to_s) }
     end
 
-    # ---- stage 1 of the pipeline: destinations, before anything is scored ---------------------------------
-    #
-    # Local and free. A destination is cut only when it cannot work, never when it looks unpromising.
     def destinations(list, set, nights: nil)
       rejections = []
       survivors = list.select do |destination|
@@ -96,7 +88,6 @@ module Planning
       nil
     end
 
-    # The cheapest stay buildable here: a lower bound, since a fare is still to come.
     def cheapest_stay_minor(city_code, set, nights)
       nights ||= set.min_nights || 7
       window = set.date_window
@@ -110,8 +101,6 @@ module Planning
       rates.min
     end
 
-    # A different question from Foresight's walkability threshold: not "is this a nice walk" but "can a person
-    # live here for a week without a car".
     CAR_FREE_DENSITY = 0.3
 
     def car_free_feasible?(city_code)
@@ -122,8 +111,6 @@ module Planning
     end
 
     def adults(set) = (set.party && (set.party["adults"] || set.party[:adults])) || 2
-
-    # ---- the final gate: a priced candidate ---------------------------------------------------------------
 
     def violations(candidate, set)
       problems = []
@@ -145,9 +132,6 @@ module Planning
 
     def satisfied_by?(candidate, set) = violations(candidate, set).empty?
 
-    # ---- when nothing survives ----------------------------------------------------------------------------
-    #
-    # Never relax silently: name the constraint doing the cutting and what loosening it would return.
     def no_candidates(rejections, set)
       binding = rejections.group_by(&:constraint).max_by { |_constraint, list| list.length }
       constraint, cut = binding || ["total_budget", []]

@@ -10,8 +10,6 @@ RSpec.describe "Supply::Flights" do
       expect(fare).to include("basis" => "observed", "freshness" => "fixture", "carrier" => "UTair",
                               "stops" => 0)
       expect(fare["duration_min"]).to eq(230)
-      # The provider's own confidence, carried rather than dropped: this one is "unverified" while the pricier
-      # connection on the same route is "verified", and a caller may well want to say so.
       expect(fare["price_status"]).to eq("unverified")
       expect(fare["as_of"]).to be_present   # mandatory: a fare is only honest while its age is visible
     end
@@ -20,7 +18,6 @@ RSpec.describe "Supply::Flights" do
       moscow = Supply::Flights.price(origin: "MOW", destination: "AER", depart_on: "2026-09-24", adults: 1)
       sheremetyevo = Supply::Flights.price(origin: "SVO", destination: "AER", depart_on: "2026-09-24", adults: 1)
 
-      # SVO alone would price a 17-hour connection via Abu Dhabi as the Sochi fare.
       expect(sheremetyevo["stops"]).to eq(1)
       expect(sheremetyevo.dig("coverage", "direct_service")).to be(false)
       expect(moscow["stops"]).to eq(0)

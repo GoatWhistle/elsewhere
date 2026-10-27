@@ -11,7 +11,5 @@ Rails.application.routes.draw do
   post "/futures/:future_id/risks/:risk_id/mitigations/:mitigation_id", to: "mitigations#create"
   get "/jobs/:id", to: "jobs#show"
 
-  # Answered for every path rather than route by route: a preflight that 404s is indistinguishable, from the
-  # browser's side, from the API being down.
   match "/*path", to: "application#preflight", via: :options
 end

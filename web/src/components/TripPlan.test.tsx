@@ -100,7 +100,6 @@ describe("TripPlan", () => {
     expect(within(mobility).getByText(/допущение/)).toBeVisible();
     expect(within(mobility).getByText(/8\s*000\s*₽/)).toBeVisible();
 
-    // DEC-029: only the base was observed. The rate is never described as calibrated on observed prices.
     expect(screen.queryByText(/калибр/i)).not.toBeInTheDocument();
   });
 

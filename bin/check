@@ -1,8 +1,4 @@
 #!/bin/sh
-# Everything that used to run in CI, in one command. The pre-push hook runs it for you.
-#
-# Ruby steps go through Docker when the host cannot run this project's Ruby, the same way bin/setup does —
-# a check that only works on one person's laptop is not a check.
 set -e
 cd "$(dirname "$0")/.."
 
@@ -11,10 +7,7 @@ if ruby -e 'exit(Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.3") ? 0 :
   ruby_run=""
 else
   if docker compose version >/dev/null 2>&1; then compose="docker compose"; else compose="docker-compose"; fi
-  # Compose names the project after the directory, so running this from a git worktree would build a second
-  # stack from scratch — image, database, the lot — instead of reusing the warm one. Pin the name to the
-  # repository rather than to whichever checkout happens to be calling.
-  export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-elsewhere-petproject}"
+  export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-elsewhere}"
   ruby_run="$compose run --rm -e RAILS_ENV=test app"
 fi
 
@@ -25,8 +18,6 @@ echo "→ rspec"
 if [ -z "$ruby_run" ]; then RAILS_ENV=test bundle exec rspec; else $ruby_run bundle exec rspec; fi
 
 echo "→ frontend"
-# node_modules is per-checkout and gitignored, so a fresh clone or a git worktree has none. Installing here
-# beats failing with "tsc: command not found", which says nothing about what is actually wrong.
 [ -d web/node_modules ] || npm ci --prefix web
 npm run check --prefix web
 npm run lint --prefix web

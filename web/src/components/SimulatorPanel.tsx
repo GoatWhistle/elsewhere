@@ -80,8 +80,6 @@ const CHANGE_MARKS: Record<Delta["dimension_changes"][number]["change"], string>
 const MINOR_UNITS_PER_MAJOR_UNIT = 100;
 const MAX_STEPS = 3;
 
-// DEC-025 fixes what each control moves and by how much. A slider that only re-sorts results is a lie,
-// so every position here maps to a named dimension, a direction and a magnitude the request carries.
 type SliderKey = "cost_comfort" | "quiet_lively" | "city_nature";
 
 type SliderSpec = {
@@ -144,8 +142,6 @@ export function SimulatorPanel({ future, onSimulate, onApplyResult }: SimulatorP
   const [noSolution, setNoSolution] = useState<NoSolution | null>(null);
   const fieldId = useId();
 
-  // A new version is a new starting point: the controls describe a move away from *this* Future, so they
-  // go back to neutral whenever the Future under them changes.
   useEffect(() => {
     setSteps(NEUTRAL);
     setInstruction("");
@@ -557,7 +553,6 @@ function AlternativeCard({ future }: { future: Future }) {
   );
 }
 
-// The room rate is modeled and the fares are observed (rule 7). A delta that mixes them has to say so.
 function PriceOrigin({ components }: { components: PriceComponent[] }) {
   if (components.length === 0) {
     return <p className="missing-data">Происхождение суммы неизвестно: разбиения по компонентам нет.</p>;
@@ -593,7 +588,6 @@ type Arithmetic = {
   exact: boolean;
 };
 
-// The arithmetic being exact is the product's claim, so it is checked in the UI rather than assumed.
 export function checkArithmetic(delta: Delta): Arithmetic {
   const itemsTotalMinor = delta.items.reduce((sum, item) => sum + item.amount.amount_minor, 0);
   const currencies = new Set([

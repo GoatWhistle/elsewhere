@@ -52,7 +52,6 @@ RSpec.describe Planning::Constraints do
     end
 
     it "cuts a destination whose cheapest possible stay already exceeds the budget" do
-      # Below the cheapest seven nights anywhere in the fixture corpus.
       set = described_class.from(dna(element("total_budget", 50_000),
                                      element("dates", window)), date_window: window)
 

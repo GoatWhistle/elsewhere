@@ -2,15 +2,10 @@ require_relative "curves"
 require_relative "taxonomy"
 
 module Planning
-  # Experience Match (DEC-020/021/024). score = Σ(wᵢ×sᵢ)/Σ(wᵢ) over scored dimensions,
-  # coverage = Σ(scored weights)/Σ(all weights), confidence = coverage × weighted mean of confidences.
-  # Normalized against a fixed ideal, never against the candidate set: a moving denominator invents deltas.
-  # Nothing scores 98%; the band is 0.6–0.9 and is not rescaled. No model touches this.
   module Match
     MEASURED = 0.9   # a number we read off a measurement
     PROXY = 0.6      # a number standing in for one we cannot measure; capped by DEC-024
 
-    # Scores within this are equal; coverage then breaks the tie, so ignorance costs something (DEC-021).
     TIE_THRESHOLD = 0.02
 
     Features = Struct.new(:geo, :rating, :temperature, :sources, keyword_init: true)
@@ -39,8 +34,6 @@ module Planning
       contributions = scored.map { |entry| contribution(entry) }
 
       {
-        # From the published contributions, not unrounded intermediates: the decomposition must add up to its
-        # own total.
         "score" => overall(contributions),
         "coverage" => total_weight.zero? ? 0.0 : (scored_weight / total_weight).round(4),
         "confidence" => confidence(scored, scored_weight, total_weight),
@@ -49,7 +42,6 @@ module Planning
       }
     end
 
-    # Σ(w×s)/Σ(w). An aversion contributes −w..+w, not 0..w: a violated aversion must pull the score down.
     def overall(contributions)
       weight = contributions.sum { |c| c["weight"] }
       return 0.0 if weight.zero?
@@ -78,15 +70,11 @@ module Planning
       }
     end
 
-    # Sort key, better first (DEC-021). Scores are bucketed rather than compared pairwise: "within 0.02" is
-    # not transitive, and a non-transitive comparator makes the order depend on the input order.
     def ranking_key(match) = [-bucket(match["score"]), -match["coverage"].to_f]
 
     def bucket(score) = (score.to_f / TIE_THRESHOLD).floor
 
     def better?(one, other) = (ranking_key(one) <=> ranking_key(other)).negative?
-
-    # ---- one dimension ------------------------------------------------------------------------------------
 
     def assess(element, features)
       dimension = element["dimension"]
@@ -101,8 +89,6 @@ module Planning
 
     def assess_sea_access(_element, features)
       distance = features.geo["distance_to_sea_m"]
-      # Absent is not unmeasured: no sea is a known fact, and calling it unknown would inflate coverage on the
-      # destinations that cannot deliver it (DEC-024).
       return { satisfaction: 0.0, confidence: MEASURED, explanation: "У этого направления нет побережья" } if distance.nil? && landlocked?(features)
       return "нет данных о расстоянии до моря" if distance.nil?
 
@@ -132,7 +118,6 @@ module Planning
                      (capped ? ", но до центра #{(centre / 1000.0).round(1)} км" : "") }
     end
 
-    # Supply gives a count where it has one, else density `d = n/(n+200)` per km²; a 500 m circle is 0.785 km².
     AREA_500M_KM2 = 0.785
 
     def poi_count(features)
@@ -142,7 +127,6 @@ module Planning
       density = features.geo["poi_density"]
       return nil if density.nil?
 
-      # A saturated density is the densest place known, not an unknown one: never fail into "no data" here.
       value = density.to_f.clamp(0.0, 0.999)
       (200.0 * value / (1 - value)) * AREA_500M_KM2
     end
@@ -153,7 +137,6 @@ module Planning
       return "нет данных о ближайшей дороге" if metres.nil? && road_class.nil?
 
       { satisfaction: Curves.quiet(metres, road_class),
-        # A road distance is not a measurement of noise, so DEC-024 caps this dimension.
         confidence: PROXY,
         explanation: "Ближайшая крупная дорога: #{metres || "нет"} м (#{road_class || "только местные"}); " \
                      "это прокси по расстоянию, а не измерение шума" }
@@ -167,7 +150,6 @@ module Planning
         explanation: "Рейтинг объекта #{rating}" }
     end
 
-    # The harvest publishes ratings on a ten-point scale; the curve is written on five.
     def normalised_rating(rating) = rating.to_f > 5.0 ? rating.to_f / 2 : rating.to_f
 
     def assess_transfer_simplicity(_element, features)
@@ -192,7 +174,6 @@ module Planning
 
       cityness = (count / 300.0).clamp(0.0, 1.0)
       { satisfaction: Curves.target_match("nature_vs_city", element["target"], cityness),
-        # POI density alone: the green share is not in the OSM layers we import.
         confidence: PROXY,
         explanation: "Городская плотность ≈#{cityness.round(2)} по числу точек притяжения; " \
                      "доля зелени не измеряется" }

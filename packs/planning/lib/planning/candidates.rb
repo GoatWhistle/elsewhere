@@ -2,9 +2,6 @@ require_relative "constraints"
 require_relative "match"
 
 module Planning
-  # Stages 1–3 of the candidate pipeline (DEC-028). Everything here is local and free, so the pipeline filters
-  # as far as it can before the only paid dependency. A fare depends on destination and dates, not on the
-  # property, so property selection happens before pricing.
   module Candidates
     DESTINATION_LIMIT = 8      # stage 2, K ≈ 8
     PROPERTIES_PER_DESTINATION = 3
@@ -16,7 +13,6 @@ module Planning
 
     module_function
 
-    # Stage 1 + 2: destinations that are not disqualified, pre-scored, top-K — with a quota.
     def destinations(constraints, dna, months:)
       survivors = Constraints.destinations(Supply::Catalog.destinations, constraints).survivors
       return [] if survivors.empty?
@@ -27,7 +23,6 @@ module Planning
       with_quota(ranked).first(DESTINATION_LIMIT)
     end
 
-    # A destination-level reading before any property: the climate on these dates against what was asked for.
     def pre_score(destination, dna, months)
       element = Array(dna["elements"]).find { |item| item["dimension"] == "climate_warm" }
       return 0.5 unless element
@@ -40,8 +35,6 @@ module Planning
       Curves.climate(temperatures.sum.to_f / temperatures.length) || 0.5
     end
 
-    # The quota that keeps archetype C fillable: one representative of every geography type survives stage 2
-    # whatever its rank, or the shortlist collapses into one type and two Futures is a filtering artefact.
     def with_quota(ranked)
       by_type = GEOGRAPHIES.to_h do |type|
         codes = Supply::Catalog.destinations(axes: { geography: type }).map(&:city_code)
@@ -52,7 +45,6 @@ module Planning
       promoted + (ranked - promoted)
     end
 
-    # Stage 3: the best few properties inside each surviving destination, scored in full and still free.
     def properties(destinations, dna, months:)
       destinations.flat_map do |destination, _score|
         pool = Supply::Catalog.properties(city_code: destination.city_code, limit: PROPERTY_POOL)
@@ -75,7 +67,6 @@ module Planning
       end
     end
 
-    # The whole free part of the pipeline in one call.
     def shortlist(dna, constraints, months:)
       properties(destinations(constraints, dna, months: months), dna, months: months)
     end

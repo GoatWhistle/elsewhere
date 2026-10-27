@@ -5,8 +5,6 @@ if File.exist?(File.join(root, "Gemfile.lock"))
   exec({ "BUNDLE_GEMFILE" => File.join(root, "Gemfile") }, "bundle", "exec", "packwerk", "check")
 end
 
-# Bootstrap fallback for machines that have not run bin/setup yet. CI always
-# executes the real Packwerk command above.
 violations = []
 Dir[File.join(root, "packs/planning/**/*.rb")].each do |file|
   text = File.read(file, encoding: "UTF-8")

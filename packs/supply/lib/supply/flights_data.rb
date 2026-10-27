@@ -3,15 +3,9 @@ require "bigdecimal"
 require_relative "ignav"
 
 module Supply
-  # Flight fares: observed, never invented, and every one carries the moment it was seen. The only paid
-  # dependency (DEC-028: ~24 requests a generation, ~40 generations on the free quota), so every answer is
-  # written to `flight_fare_snapshots` and read from there first. Tests run in fixture mode.
   module FlightsData
-    # A city code is not accepted for fares, so a Moscow origin expands to its airports. Three is the cap:
-    # eight destinations × three origins is the 24-request budget exactly.
     MAX_ORIGIN_AIRPORTS = 3
 
-    # No price calendar, so one request per date: three days either side is seven requests for one route.
     MAX_WINDOW_DAYS = 3
 
     module_function
@@ -35,15 +29,12 @@ module Supply
       return merged_failure(answers, offline: offline) if priced.empty?
 
       best = priced.min_by { |answer| answer["amount"]["amount_minor"] }
-      # Whether any origin had a nonstop, not just the cheapest: "no direct service" is a different claim from
-      # "the cheapest option connects".
       best.merge("coverage" => best["coverage"].merge(
         "direct_service" => priced.any? { |answer| answer.dig("coverage", "direct_service") },
         "origins_tried" => origins
       ))
     end
 
-    # The engine behind "shift the dates and save X". One request per date, capped.
     def around_dates(origin:, destination:, depart_on:, window_days: 1, adults: 1,
                      cache: PageCache.new, offline: false, market: nil)
       window = [window_days.to_i, MAX_WINDOW_DAYS].min
@@ -57,7 +48,6 @@ module Supply
       end
     end
 
-    # One origin/destination pair, from the snapshot table if we have it and from Ignav if we do not.
     def snapshot(from:, to:, depart_on:, return_on:, adults:, cabin_class:, market:, cache:, offline:)
       stored = FlightFareSnapshotRecord.find_by(origin: from, destination: to, depart_on: depart_on.to_s,
                                                 return_on: return_on&.to_s, adults: adults,
@@ -126,7 +116,6 @@ module Supply
       coverage = { "assessed" => true, "itineraries" => record.itineraries,
                    "direct_service" => record.direct_service }
       unless record.direct_service
-        # The finding behind DEC-027, carried on every answer rather than left in a document.
         coverage["reason"] = "the provider returned no nonstop itinerary for this route"
       end
 
@@ -137,7 +126,6 @@ module Supply
 
       {
         "amount" => { "amount_minor" => record.amount_minor, "currency" => record.currency },
-        # Mandatory: a fare we cannot sell is only honest while its age is visible.
         "as_of" => record.as_of.iso8601,
         "carrier" => record.carrier, "duration_min" => record.duration_min, "stops" => record.stops,
         "booking_url" => record.booking_url, "provider_itinerary_id" => record.provider_itinerary_id,
@@ -146,8 +134,6 @@ module Supply
       }
     end
 
-    # City code → airport codes. Airport search accepts a city code even though fares do not; a queried code
-    # that comes back in the results was already an airport.
     def resolve(code, cache:, offline:, limit:)
       code = code.to_s.upcase
       result = Ignav.airports(code, cache: cache, offline: offline)

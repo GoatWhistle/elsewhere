@@ -1,4 +1,3 @@
-# Private to packs/supply. See DestinationRecord.
 class PropertyRecord < ActiveRecord::Base
   self.table_name = "properties"
 

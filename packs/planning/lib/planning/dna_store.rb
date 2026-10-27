@@ -1,12 +1,7 @@
 require_relative "taxonomy"
 
 module Planning
-  # Travel DNA in PostgreSQL, versioned (DEC-023). Two rules, both because the user is the authority on their
-  # own preferences: `PATCH` is an upsert by dimension and never a whole-set replace, and nothing cascades —
-  # clearing `car_free` marks the element inferred from it rather than quietly re-weighting `walkability`.
   module DnaStore
-    # What an element becomes when its basis is taken away: not deleted, but no longer claiming to rest on
-    # anything.
     ORPHANED_PROVENANCE = "default".freeze
     ORPHANED_CONFIDENCE = 0.3
 
@@ -22,7 +17,6 @@ module Planning
       read(version)
     end
 
-    # The upsert. Incoming elements land on their dimension and nothing else is touched.
     def update(session_id:, elements:)
       current = latest(session_id)
       raise ArgumentError, "no Travel DNA for session #{session_id}" unless current
@@ -50,9 +44,7 @@ module Planning
           "kind" => raw["kind"] || raw[:kind] || previous["kind"] || Taxonomy.kind(dimension),
           "target" => raw.key?("target") || raw.key?(:target) ? (raw["target"] || raw[:target]) : previous["target"],
           "weight" => raw.key?("weight") || raw.key?(:weight) ? (raw["weight"] || raw[:weight]) : previous["weight"],
-          # An edit is confirmed at full confidence, and nothing inferred may overwrite it afterwards.
           "provenance" => "confirmed", "confidence" => 1.0,
-          # An edited element stands on the user's word now, not on whatever it was derived from.
           "_derived_from" => nil
         )
       end
@@ -60,7 +52,6 @@ module Planning
       mark_orphans(by_dimension.values)
     end
 
-    # An inference whose basis is gone is shown, never silently repaired or deleted.
     def mark_orphans(elements)
       by_dimension = elements.to_h { |element| [element["dimension"], element] }
 

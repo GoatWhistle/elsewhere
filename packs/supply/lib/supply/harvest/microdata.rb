@@ -3,16 +3,12 @@ require "bigdecimal"
 
 module Supply
   module Harvest
-    # schema.org microdata, read with regular expressions because the Gemfile has no HTML parser. The markup
-    # is machine-oriented `itemprop` output, so it is regular in practice, and every field is asserted against
-    # a captured page in the spec. If this starts guessing, add the parser rather than another regex.
     module Microdata
       LODGING_TYPES = %w[Hotel Hostel Motel Resort BedAndBreakfast LodgingBusiness Apartment].freeze
       LODGING_MARKER = /itemtype="https:\/\/schema\.org\/(?:#{LODGING_TYPES.join("|")})"/.freeze
 
       module_function
 
-      # One hash per lodging on the page, values still as the page wrote them.
       def lodgings(html)
         text = html.to_s
         starts = text.enum_for(:scan, LODGING_MARKER).map { Regexp.last_match.begin(0) }
@@ -26,8 +22,6 @@ module Supply
       end
 
       def extract(block)
-        # The lodging's name is element text while amenity blocks use content="…", so only the head of the
-        # block reads it unambiguously.
         head = block.split('itemprop="amenityFeature"').first.to_s
 
         {
@@ -72,13 +66,8 @@ module Supply
         CGI.unescapeHTML(fragment.gsub(/<[^>]*>/, " ")).gsub(/\s+/, " ").strip
       end
 
-      # What a nightly rate can plausibly be, in minor units: 300 ₽ to 500 000 ₽. Not a taste filter — the
-      # source publishes junk like "от 1 400 000 000 руб." on the Sochi page, and anchoring the modeled rate on
-      # that would poison every price built from it. Outside the band is absent with a reason, not observed.
       PLAUSIBLE_MINOR = (30_000..50_000_000).freeze
 
-      # "от 5 200 руб. средняя цена за номер" / data-price-value="5200" → 520000 minor units.
-      # Money is an integer in minor units, never a float, so the decimal goes through BigDecimal.
       def price_minor(record)
         major = record[:price_value] || record[:price_level_text].to_s[/([\d][\d  ]*(?:[.,]\d+)?)/, 1]
         return nil if major.nil? || major.to_s.strip.empty?
@@ -89,7 +78,6 @@ module Supply
         (BigDecimal(normalised) * 100).round.to_i
       end
 
-      # => [minor_units, note]. Exactly one of the two is ever non-nil.
       def price_level(record)
         minor = price_minor(record)
         return [nil, "the listing publishes no price"] if minor.nil?
@@ -98,7 +86,6 @@ module Supply
         [minor, nil]
       end
 
-      # "9.4 / 10" → [9.4, 10]: the scale travels with the number.
       def rating(record)
         value = record[:rating].to_s[/(\d+(?:[.,]\d+)?)/, 1]
         return [nil, nil] unless value

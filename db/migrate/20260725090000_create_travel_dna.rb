@@ -1,8 +1,5 @@
 class CreateTravelDna < ActiveRecord::Migration[8.1]
   def change
-    # Versioned, never mutated (DEC-023). "The score is deterministic" is unprovable while the DNA comes from a
-    # model that drifts between runs; pinning the version makes it a checkable claim instead of a promise, and
-    # it stops a percentage the user has already seen from changing retroactively.
     create_table :travel_dna_versions, id: :uuid do |t|
       t.uuid :session_id, null: false
       t.integer :version, null: false
@@ -25,8 +22,6 @@ class CreateTravelDna < ActiveRecord::Migration[8.1]
       t.decimal :confidence, precision: 4, scale: 3, null: false
       t.integer :position, null: false, default: 0       # the ranking the weights came from
 
-      # Which stated dimension this one was inferred from. Kept so that when the user takes that statement away
-      # we can say so, rather than silently re-weighting something they never asked for.
       t.string :derived_from
       t.timestamps
     end

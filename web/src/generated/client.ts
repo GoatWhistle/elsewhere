@@ -1,6 +1,3 @@
-// Generated boundary for docs/04_api/openapi.yaml. Until code generation is
-// wired into bin/check, this file mirrors the frozen contract explicitly.
-
 export type Money = {
   amount_minor: number;
   currency: string;
@@ -339,7 +336,6 @@ export class ElsewhereClient {
     return this.request<Future>(`/futures/${futureId}`);
   }
 
-  // Simulation is a job: the contract answers 202 with a Job reference and the client polls.
   simulateFuture(futureId: string, body: SimulationRequest) {
     return this.request<Job>(`/futures/${futureId}/simulations`, {
       method: "POST",
@@ -362,8 +358,6 @@ export class ElsewhereClient {
     return this.request<Forecast>(`/futures/${futureId}/forecast`);
   }
 
-  // Poll until the job settles. A simulation that never finishes is a bug worth surfacing, not a spinner
-  // that spins forever, so the wait is bounded and the timeout is an error the caller can show.
   async awaitJob(jobId: string, { intervalMs = 400, timeoutMs = 20_000 } = {}): Promise<Job> {
     const startedAt = Date.now();
 

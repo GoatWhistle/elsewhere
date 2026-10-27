@@ -18,8 +18,6 @@ export const updateTravelDna = (sessionId: string, elements: TravelDnaElementInp
   client.updateTravelDna(sessionId, elements);
 export const generateFutures = (sessionId: string) => client.generateFutures(sessionId);
 
-// The contract answers 202 with a job reference; polling belongs here rather than in a component, so a panel
-// only ever sees a settled Job.
 export const simulateFuture = async (futureId: string, request: SimulationRequest) => {
   const accepted = await client.simulateFuture(futureId, request);
   return accepted.status === "succeeded" || accepted.status === "failed"

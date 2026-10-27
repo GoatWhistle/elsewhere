@@ -17,7 +17,6 @@ RSpec.describe Supply::Osm do
                            source_url: "https://example.invalid", harvested_at: Time.current)
   end
 
-  # Overpass answers, cached the way a real import caches them, so the whole import runs offline.
   def cache_with(layers)
     cache = Supply::PageCache.new(root: Dir.mktmpdir("osm-spec"))
     box = described_class.property_box(destination)

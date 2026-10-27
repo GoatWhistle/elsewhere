@@ -21,7 +21,6 @@ RSpec.describe Foresight::Mitigations do
     Foresight::Forecasts.for_future(future_id: future["id"])
   end
 
-  # The Sochi fixture property sits 220 m from a primary road; its quiet neighbour is 700 m from a secondary.
   let(:noisy_geo) do
     { "nearest_major_road_m" => 40, "road_class" => "primary", "distance_to_sea_m" => 140,
       "poi_density" => 0.9, "restaurant_count_500m" => 28, "airport_distance_m" => 28_000,
@@ -85,7 +84,6 @@ RSpec.describe Foresight::Mitigations do
 
   describe "a fix that cannot fix anything" do
     it "is not offered at all" do
-      # Every alternative in the fixture city is closer to a road than this one already is.
       quiet = forecast(geo: noisy_geo.merge("nearest_major_road_m" => 220))
       risk = quiet["risks"].find { |r| r["risk_type"] == "night_noise" }
 
@@ -102,8 +100,6 @@ RSpec.describe Foresight::Mitigations do
 
   describe "the boundary that everyone will want to break" do
     it "writes no future version, and no Future at all" do
-      # Comments are stripped first: this pack *talks* about Planning::Simulator at length, because saying why
-      # the boundary exists is half of keeping it. What must not appear is a call.
       code = Dir[Rails.root.join("packs/foresight/**/*.rb")].flat_map { |path| File.readlines(path) }
                                                             .grep_v(/^\s*#/).join
 

@@ -58,7 +58,6 @@ RSpec.describe Planning::Delta do
     end
 
     it "reports risks as empty rather than guessing them" do
-      # Foresight reads Planning, not the other way round, so a Future cannot ask it what appeared.
       expect(delta.fetch("new_risks")).to eq([])
       expect(delta.fetch("resolved_risks")).to eq([])
     end

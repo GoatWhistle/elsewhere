@@ -44,7 +44,6 @@ RSpec.describe Planning::Match do
       one = described_class.score(dna: dna(element("sea_access", 1.0)),
                                   features: features(geo: { "distance_to_sea_m" => 600 }))
 
-      # Scoring a better candidate afterwards must not restate the first one.
       described_class.score(dna: dna(element("sea_access", 1.0)), features: features(geo: { "distance_to_sea_m" => 10 }))
       again = described_class.score(dna: dna(element("sea_access", 1.0)),
                                     features: features(geo: { "distance_to_sea_m" => 600 }))
@@ -98,7 +97,6 @@ RSpec.describe Planning::Match do
     it "contributes negatively when it is violated" do
       violated = described_class.score(dna: dna(element("crowds", 1.0, kind: "aversion", target: 0.1)),
                                        features: features)
-      # crowds has no feature, so inject one through a dimension that does: nature_vs_city as an aversion.
       hated = described_class.score(dna: dna(element("nature_vs_city", 1.0, kind: "aversion", target: 0.1)),
                                     features: features(geo: { "poi_density" => 0.95 }))
 

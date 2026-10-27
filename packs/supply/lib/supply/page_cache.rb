@@ -4,8 +4,6 @@ require "json"
 require "time"
 
 module Supply
-  # Raw responses on disk, keyed by URL. The first pass pays for every page and every pass after it — a parser
-  # fix, a new field, a fresh database — reads from disk and sends nothing.
   class PageCache
     Entry = Struct.new(:body, :status, :fetched_at, :url, :source, keyword_init: true) do
       def from_cache? = source == :cache
@@ -39,9 +37,6 @@ module Supply
       Entry.new(body: body, status: status, fetched_at: fetched_at, url: url, source: :network)
     end
 
-    # Only a miss reaches the block; `refresh: true` is the deliberate escape hatch for a changed source.
-    # `max_age` covers the one answer that expires on its own, a weather forecast. Everything else is cached
-    # forever: it is a record of what the source said, and that does not go off.
     def fetch(url, refresh: false, max_age: nil)
       unless refresh
         hit = read(url)

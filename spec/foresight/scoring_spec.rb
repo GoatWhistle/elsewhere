@@ -14,7 +14,6 @@ RSpec.describe Foresight::Scoring do
     end
 
     it "climbs through three bands as the measurement gets worse" do
-      # exceedance 0.03 · 0.31 · 0.71 of the threshold
       bands = [0.34, 0.24, 0.10].map { |value| described_class.severity(finding(measurement: value, threshold: 0.35)) }
 
       expect(bands).to eq(%w[low medium high])
@@ -55,8 +54,6 @@ RSpec.describe Foresight::Scoring do
   end
 
   describe "the two axes stay separate" do
-    # The distinction DEC-030 exists to preserve: these two demand different responses from a traveller and a
-    # single blended number would hide exactly that.
     it "tells 'probably fine but severe' apart from 'certainly a minor annoyance'" do
       severe_but_unproven = finding(claim_kind: "model_inference", measurement: 40, threshold: 300, completeness: 1.0)
       minor_but_solid = finding(claim_kind: "derived_metric", measurement: 0.34, threshold: 0.35, completeness: 1.0)

@@ -1,18 +1,12 @@
 require "date"
 
 module Foresight
-  # Everything the forecast may reason from, gathered once per future. Three sources, the third empty on
-  # purpose: no free source has review text or sentiment, a permanent condition (C-05), so
-  # `Reviews::Result(available: false)` is the normal path and not an error branch. Four of the nine risk types
-  # can only be evidenced by what people wrote, so they are reported unassessed with the reason every time.
   module Evidence
-    # Which measurements each risk type needs before it can say anything at all.
     REQUIREMENTS = {
       "night_noise" => { geo: %w[nearest_major_road_m road_class] },
       "walkability" => { geo: %w[poi_density restaurant_count_500m] },
       "weather_mismatch" => { climate: %w[temp_mean_c] },
       "transfer_difficulty" => { geo: %w[airport_distance_m] },
-      # The four the harvest cannot reach: not forgotten, unevidenced, and said so on every response.
       "crowds" => { reviews: %w[documents] },
       "construction" => { reviews: %w[documents] },
       "weak_transport" => { reviews: %w[documents] },
@@ -22,7 +16,6 @@ module Foresight
 
     Bundle = Struct.new(:property_id, :city_code, :check_in, :check_out, :months,
                         :geo, :climate, :reviews, :sources, keyword_init: true) do
-      # `nil` is a missing measurement, never a zero.
       def geo_value(name) = geo[name]
 
       def climate_value(name, month)
@@ -39,7 +32,6 @@ module Foresight
         end
       end
 
-      # Why a risk type could not be assessed, in the words of whatever refused to answer.
       def unavailable_reason(risk_type)
         REQUIREMENTS.fetch(risk_type, {}).filter_map do |source, fields|
           case source
@@ -80,7 +72,6 @@ module Foresight
         sources: {
           "geo" => { "freshness" => geo["freshness"], "available" => !geo.empty? },
           "weather" => { "freshness" => climate.values.first&.dig("freshness"), "available" => climate.values.any? { |n| n["temp_mean_c"] } },
-          # Always false, always with the reason: the tested default, not a fallback.
           "review" => { "available" => reviews.available, "reason" => reviews.reason, "freshness" => reviews.freshness }
         }
       )

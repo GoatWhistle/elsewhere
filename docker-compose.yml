@@ -21,16 +21,11 @@ services:
       retries: 20
     ports: ["6379:6379"]
   app:
-    image: elsewhere-phase0
+    image: elsewhere
     build: .
-    # Provider keys and the LLM endpoint live in .env, which is never committed. Compose reads .env for its own
-    # interpolation whether or not it is named here, so without env_file the app container saw none of it and
-    # every AI::Task came back degraded with the model sitting idle on the host.
     env_file:
       - path: .env
         required: false
-    # These four override .env on purpose: inside the network the database and Redis are reachable by service
-    # name, not by the localhost address a host-side run would use.
     environment:
       RAILS_ENV: development
       DATABASE_URL: postgres://elsewhere:elsewhere@postgres/elsewhere_development

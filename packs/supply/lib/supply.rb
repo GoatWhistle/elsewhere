@@ -56,11 +56,7 @@ module Supply
     end
   end
 
-  # Two sources behind one signature (DEC-005): the fixtures other packages develop against, and the harvested
-  # corpus. Neither is a provider call, so both read `cached`, never `live`.
   module Sources
-    # `axes` filters and does not label: the contract's Destination schema is closed, so a geography type
-    # cannot travel on it and a caller asks for one type at a time (DEC-028).
     module Axes
       module_function
 
@@ -73,8 +69,6 @@ module Supply
     end
 
     module Fixtures
-      # The three fixture destinations and the geography each stands for. A surprise here is a surprise
-      # everywhere, so they do not change.
       GEOGRAPHY = { "AER" => "sea", "MRV" => "mountains", "LED" => "city" }.freeze
 
       module_function
@@ -88,7 +82,6 @@ module Supply
       def property(id:) = FixtureData.properties.find { |p| p.catalogue_id == id }
     end
 
-    # Geo is computed from the OSM extract, so it is local data too: `cached`, never `live`.
     module DatabaseGeo
       module_function
 
@@ -116,8 +109,6 @@ module Supply
       def forecast(city_code:, from:, to:) = ClimateData.forecast(city_code: city_code, from: from, to: to)
     end
 
-    # A placeholder rate for fixture mode, and it says so: the real model is RateModel over a harvested
-    # property.
     module FixtureRates
       module_function
 
@@ -134,7 +125,6 @@ module Supply
           "calibration" => { "model_version" => "phase-0-placeholder", "city_code" => property.city_code,
                              "statement" => "a Phase 0 placeholder, not the calibrated model" },
           "handoff_url" => "https://example.invalid/properties/#{property_id}",
-          # The same silence RateModel reports: the fixture rate does not price the party either.
           "unassessed" => adults.to_i > 1 ? { "occupancy" => "the base is per room; it is not adjusted for party size" } : {}
         }
       end
@@ -173,7 +163,6 @@ module Supply
         record && destination_value(record)
       end
 
-      # Ordered so "the top few in this city" is the same few every run; row order must not move a Future.
       def properties(city_code:, limit: 20)
         PropertyRecord.where(city_code: city_code)
                       .order(Arel.sql("rating DESC NULLS LAST, review_count DESC NULLS LAST, catalogue_id"))
@@ -197,7 +186,6 @@ module Supply
           catalogue_id: record.catalogue_id, name: record.name, city_code: record.city_code,
           coordinates: { "lat" => record.lat.to_f, "lon" => record.lon.to_f },
           rating: record.rating&.to_f,
-          # Minor units, as every amount of money in this system is.
           price_level: record.price_level_minor, freshness: "cached"
         )
       end
@@ -270,10 +258,7 @@ module Supply
       def flights; FlightFixtures; end
       def reviews; Reviews; end
     end
-    # The seam for Ignav, Open-Meteo and the harvested stores. It keeps the captured corpus so a demo stays
-    # deterministic until credentials and imports are configured.
     class Live < Fixture
-      # The corpus is harvested and stored locally, so it is available in live mode without a provider call.
       def catalog; Sources::Database; end
       def geo; Sources::DatabaseGeo; end
       def climate; Sources::DatabaseClimate; end

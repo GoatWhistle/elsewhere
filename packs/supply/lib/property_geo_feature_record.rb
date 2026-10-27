@@ -1,4 +1,3 @@
-# Private to packs/supply. Geo features cross the boundary as a plain hash on Supply::Geo.features.
 class PropertyGeoFeatureRecord < ActiveRecord::Base
   self.table_name = "property_geo_features"
 

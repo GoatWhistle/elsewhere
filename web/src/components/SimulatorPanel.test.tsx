@@ -235,7 +235,6 @@ describe("SimulatorPanel", () => {
     expect(newRisks).toHaveTextContent("риск высокий");
     expect(document.querySelector(".delta-risk-list--resolved")).toHaveTextContent("Толпы людей");
 
-    // The room rate is modeled and the fare is observed; a delta mixing them has to say so.
     expect(screen.getByText(/наблюдаемые: Перелёт/)).toBeVisible();
     expect(screen.getByText(/моделируемые: Проживание/)).toBeVisible();
     expect(screen.getByText(/смешивает наблюдаемые и моделируемые/)).toBeVisible();
@@ -297,7 +296,6 @@ describe("SimulatorPanel", () => {
     expect(within(alternative as HTMLElement).getByText(/153\s*000\s*₽/)).toBeVisible();
     expect(within(alternative as HTMLElement).getByText(/Match 88%/)).toBeVisible();
 
-    // No success state: no delta, and the parent is not asked to store a new version.
     expect(screen.queryByRole("heading", { name: "Разница между версиями" })).not.toBeInTheDocument();
     expect(onApplyResult).not.toHaveBeenCalled();
   });

@@ -1,8 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Supply::Corpus do
-  # The corpus as it actually came out of the harvest — 408 properties over seven destinations. Asserting
-  # against the real numbers is the point: a spread that only holds for invented data proves nothing.
   let(:real) do
     described_class.from_snapshot(Rails.root.join("packs/supply/fixtures/corpus_profile.json").read)
   end

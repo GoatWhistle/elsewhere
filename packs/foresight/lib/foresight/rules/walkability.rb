@@ -1,17 +1,11 @@
 module Foresight
   module Rules
-    # Whether the area around the property can be lived on foot. `derived_metric`, not `verified_fact`: the POI
-    # counts are measured but "walkable" is a computation on top of them. Not `model_inference` either —
-    # nothing here reasons about experience, only about what is within 500 m of the door.
     module Walkability
       RISK_TYPE = "walkability".freeze
       DIMENSION = "walkability".freeze
 
-      # Below this density the surroundings stop supplying daily life within a walk. On the measured corpus
-      # 0.35 sits just above the first quartile, flagging roughly the emptiest third. Fixed, never recomputed.
       DENSITY_THRESHOLD = 0.35
 
-      # A place can be dense in POIs and still have nowhere to eat, which is the failure this catches.
       RESTAURANTS_THRESHOLD = 5
 
       module_function
@@ -28,8 +22,6 @@ module Foresight
         Finding.new(
           risk_type: RISK_TYPE, affected_dimension: DIMENSION, claim_kind: "derived_metric",
           measurement: density, threshold: DENSITY_THRESHOLD, unit: "density", direction: :below,
-          # Without the street network the same call is made on two measurements instead of three, and the
-          # confidence says so.
           completeness: walk_metres ? 1.0 : 2.0 / 3,
           statement: "Пешком отсюда доступно мало: #{parts.join(", ")}. " \
                      "Это расчёт по количеству объектов вокруг, а не оценка того, приятно ли идти.",

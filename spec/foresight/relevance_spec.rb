@@ -1,16 +1,12 @@
 require "rails_helper"
 
 RSpec.describe "Foresight relevance filtering" do
-  # A property that genuinely has all four problems: a road at the door, nothing within a walk, a cold month
-  # and a distant airport. Which of them the traveller is told about is the whole question.
   let(:bad_geo) do
     { "nearest_major_road_m" => 40, "road_class" => "primary", "poi_density" => 0.1,
       "restaurant_count_500m" => 1, "airport_distance_m" => 90_000, "freshness" => "cached" }
   end
   let(:cold_july) { { "temp_mean_c" => 8.0, "rain_days" => 18.0, "freshness" => "cached" } }
 
-  # Built from the project's own persona fixtures: `must_include` is the set of dimensions each Dream is
-  # supposed to produce, which is exactly what "what this traveller cares about" means here.
   def dna_for_persona(id)
     personas = JSON.parse(Rails.root.join("spec/fixtures/personas/demo_ru.json").read)
     persona = personas.fetch(personas.index { |p| p["id"] == id })
@@ -53,7 +49,6 @@ RSpec.describe "Foresight relevance filtering" do
     forecast = forecast_for(dna_for_persona("city"))
     assessed = forecast["coverage"].select { |entry| entry["assessed"] }.map { |entry| entry["risk_type"] }
 
-    # Filtering changes which risks are shown; it never changes what we claim to have looked at.
     expect(assessed).to contain_exactly("night_noise", "walkability", "weather_mismatch", "transfer_difficulty")
     expect(forecast["coverage"].reject { |entry| entry["assessed"] }).to all(include("reason"))
   end

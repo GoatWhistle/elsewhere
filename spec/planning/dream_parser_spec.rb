@@ -40,12 +40,10 @@ RSpec.describe Planning::DreamParser do
     end
 
     it "marks what we worked out as inferred, and less certain" do
-      # "без машины" implies getting around on foot and a simple transfer. It is a claim the user did not make.
       expect(element("transfer_simplicity")).to include("provenance" => "inferred", "confidence" => 0.6)
     end
 
     it "never lets an inference overwrite something the user stated" do
-      # walkability is both stated here and inferrable from car_free; the statement wins.
       expect(element("walkability")).to include("provenance" => "stated", "confidence" => 1.0)
       expect(parsed.elements.count { |item| item["dimension"] == "walkability" }).to eq(1)
     end

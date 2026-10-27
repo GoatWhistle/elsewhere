@@ -39,8 +39,6 @@ module Elsewhere
         persistent? ? FutureVersionRecord.find_by(id: id)&.payload : futures[id]
       end
 
-      # Removing a superseded drag intermediate. Not an update: a Future is never mutated in place, and the
-      # pixels of a dragged slider are simply not kept (DEC-025).
       def delete_future(id)
         persistent? ? FutureVersionRecord.where(id: id).delete_all : futures.delete(id)
       end

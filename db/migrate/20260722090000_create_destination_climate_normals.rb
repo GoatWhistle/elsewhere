@@ -12,8 +12,6 @@ class CreateDestinationClimateNormals < ActiveRecord::Migration[8.1]
       t.decimal :rain_days, precision: 4, scale: 1       # average count of days ≥ 1 mm, so not an integer
       t.decimal :sea_temp_c, precision: 4, scale: 1
 
-      # Air and sea come from different archives with different depths — 30 years against about three. A single
-      # "these are the normals" would paper over a difference the reader needs in order to weigh the number.
       t.integer :air_years_from
       t.integer :air_years_to
       t.integer :sea_years_from

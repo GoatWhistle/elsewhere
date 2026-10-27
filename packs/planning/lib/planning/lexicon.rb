@@ -1,13 +1,5 @@
 module Planning
-  # Reading a Dream without a model: `AI::Task`'s fallback, a lexicon over the user's own words rather than a
-  # guess at meaning. Everything it finds is quoted from the Dream, so the element is genuinely `stated`;
-  # everything it cannot map goes to `unmatched_intent` and is shown. The cost of losing the model is recall,
-  # and recall failures are displayed rather than hidden.
   module Lexicon
-    # Ruby's `\w` is ASCII-only and does not match Cyrillic, so `жив\w*` matches nothing while looking correct.
-    # Every stem uses an explicit `[а-яё]*`; `\b` does work against Cyrillic and is kept.
-    #
-    # dimension => [target, [patterns...]]. Order matters only for readability; matching is exhaustive.
     PATTERNS = [
       ["sea_access", "high", [/\bмор[ею]\b/i, /\bморск/i, /\bпляж/i]],
       ["quiet", "high", [/\bтих/i, /\bтишин/i, /\bспокойн/i]],
@@ -31,7 +23,6 @@ module Planning
 
     module_function
 
-    # Everything the lexicon can see, each with the words that produced it.
     def matches(dream)
       text = dream.to_s
       found = PATTERNS.filter_map do |dimension, target, patterns|
@@ -41,7 +32,6 @@ module Planning
         Match.new(dimension: dimension, target: target, quote: quote)
       end
 
-      # One dimension, one element: the most specific reading wins, by the order the table is written in.
       found.uniq(&:dimension) + [budget(text), trip_length(text), dates(text)].compact
     end
 
@@ -54,8 +44,6 @@ module Planning
                          quote: text[/(?:до|не\s+дороже|бюджет[а-яё]*\s+до|в\s+пределах)\s*[\d][\d  ]*\s*(?:₽|руб|р\.|тыс)/i])
       end
 
-      # "Умеренный бюджет" names the dimension without the number: a stated preference with an unknown bound,
-      # kept, with the clarification asking for the figure.
       quote = text[NAMED_BUDGET]
       quote && Match.new(dimension: "total_budget", target: nil, quote: quote)
     end
@@ -82,7 +70,6 @@ module Planning
       nil
     end
 
-    # Party is a fact about the trip, not a Travel DNA dimension; the contract spec asserts it.
     def party(text)
       return { "adults" => 2, "children" => 0 } if text.match?(/вдво[её]м|на\s+двоих|вдвоем/i)
       return { "adults" => 1, "children" => 0 } if text.match?(/один|одна|соло/i)
@@ -90,7 +77,6 @@ module Planning
       nil
     end
 
-    # What the lexicon could not place, shown to the user: dropping intent silently turns this into filters.
     def leftovers(dream, matches)
       quoted = matches.map(&:quote).compact
       dream.to_s.split(/[.,;!?\n]+/).map(&:strip).reject do |phrase|

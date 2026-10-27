@@ -4,9 +4,6 @@ require_relative "http"
 require_relative "page_cache"
 
 module Supply
-  # Open-Meteo: climate normals and the forecast, no API key. The free tier is non-commercial only — fine for
-  # this build, a paid dependency the day it is not. Quoted limits are 10 000 calls/day, 5 000/hour,
-  # 600/minute; we make seven.
   module OpenMeteo
     ARCHIVE = "https://archive-api.open-meteo.com/v1/archive".freeze
     MARINE = "https://marine-api.open-meteo.com/v1/marine".freeze
@@ -22,19 +19,16 @@ module Supply
 
     module_function
 
-    # Daily history, for aggregating into normals. Cached forever: 1995–2024 does not change.
     def archive(lat:, lon:, from:, to:, cache: PageCache.new, offline: false)
       get(ARCHIVE, { latitude: lat, longitude: lon, start_date: from, end_date: to,
                      daily: DAILY.join(","), timezone: "UTC" }, cache: cache, offline: offline)
     end
 
-    # Sea surface temperature. The marine archive starts in 2023, so this is a three-year mean, recorded as one.
     def marine(lat:, lon:, from:, to:, cache: PageCache.new, offline: false)
       get(MARINE, { latitude: lat, longitude: lon, start_date: from, end_date: to,
                     daily: "sea_surface_temperature_mean", timezone: "UTC" }, cache: cache, offline: offline)
     end
 
-    # A forecast is worth something only while fresh: past the maximum age the cache is a miss, not a stale hit.
     FORECAST_MAX_AGE_S = 3 * 3600
 
     def forecast(lat:, lon:, from:, to:, cache: PageCache.new, offline: false)
@@ -43,8 +37,6 @@ module Supply
           cache: cache, offline: offline, max_age: FORECAST_MAX_AGE_S)
     end
 
-    # Metered by data volume, not request count: thirty years of daily history for one city can trip
-    # "Minutely API request limit exceeded". The limit is per minute, so the answer is to wait it out.
     RETRY_AFTER_S = 65
 
     def with_quota(attempts: 3)

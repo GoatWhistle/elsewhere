@@ -1,7 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Foresight::Rules do
-  # A bundle built by hand, so each rule is judged on numbers the test states outright.
   def bundle(geo: {}, climate: {}, months: [7])
     Foresight::Evidence::Bundle.new(
       property_id: "p", city_code: "AER", check_in: Date.new(2026, 7, 8), check_out: Date.new(2026, 7, 15),

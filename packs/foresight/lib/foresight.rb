@@ -14,11 +14,7 @@ require_relative "foresight/relevance"
 require_relative "foresight/mitigations"
 
 module Foresight
-  # What could go wrong for this person, stated with its evidence or not stated at all. There is no review
-  # source (C-05), so the qualitative layer behind "street noise after 23:00" is gone; what is left is geo and
-  # climate, and the rest is reported as unassessed.
   module Forecasts
-    # Every type the contract knows. A forecast answers for all of them — with a risk, or with a reason.
     ALL_RISK_TYPES = Elsewhere::Values::RISK_TYPES
 
     module_function
@@ -36,8 +32,6 @@ module Foresight
       }
     end
 
-    # Only rules that fired, and only for dimensions this traveller cares about. A rule that found nothing is
-    # silence, not a "low" risk, and `coverage` still reports the type as assessable.
     def risks(future, evidence, dna)
       findings = Rules.findings(evidence, dna: dna).select(&:triggered?)
       Relevance.filter(findings, dna).map { |finding| risk_item(finding, evidence, future) }
@@ -57,8 +51,6 @@ module Foresight
       }
     end
 
-    # Every risk type says whether it was assessed and why not, in the words of whatever refused to answer.
-    # Four can only be evidenced by review text, so they always carry Supply's reason for having none.
     DNA_UNRESOLVED_REASON = "Travel DNA could not be resolved; relevance filtering was not applied".freeze
 
     def coverage(evidence, dna: nil)
@@ -73,8 +65,6 @@ module Foresight
       end
     end
 
-    # The adjustment payload for one mitigation; applying it is Planning::Simulator's job. The interface
-    # carries no future, so the risk id does, and recomputing is exact because a Future is immutable.
     def mitigation_adjustment(risk_id:, mitigation_id:)
       future_id, risk_type = Mitigations.parse_risk_id(risk_id)
       future = Planning::Futures.find(future_id: future_id)

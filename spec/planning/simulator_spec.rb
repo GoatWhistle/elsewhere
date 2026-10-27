@@ -1,13 +1,8 @@
 require "rails_helper"
 
 RSpec.describe Planning::Simulator do
-  # The fixture corpus refuses Sochi on the currency mismatch, which would leave nothing to simulate over. A
-  # rouble fare is what that destination will look like once the FX question is answered, so the simulator is
-  # exercised against the corpus it is actually meant for.
   before do
     allow(Supply::Flights).to receive(:price) do |destination:, **|
-      # The sea costs more to reach than the mountains here, so "cheaper" has somewhere real to go — and going
-      # there costs the whole of sea_access, which is what makes the epsilon case testable.
       { "amount" => { "amount_minor" => { "AER" => 4_000_000, "MRV" => 3_000_000 }.fetch(destination, 3_500_000),
                       "currency" => "RUB" },
         "as_of" => "2026-07-01T00:00:00Z", "carrier" => "Тест", "duration_min" => 150, "stops" => 0,
@@ -61,7 +56,6 @@ RSpec.describe Planning::Simulator do
 
   describe "epsilon is a refusal, not a fudge" do
     it "declines a step that would cost a top-weighted dimension more than 0.05, and says what it would save" do
-      # Getting cheaper here means leaving the sea entirely, and the Dream leads with the sea.
       result = described_class.simulate(future_id: best.fetch("id"),
                                         instruction: "Сделай дешевле, без ущерба важному")
 
@@ -116,7 +110,6 @@ RSpec.describe Planning::Simulator do
       lineage = Planning::Futures.list(session_id: session.fetch("id"))["futures"]
                                  .select { |f| f["lineage_id"] == best["lineage_id"] }
 
-      # The intermediate is gone: the parent and one current version, never a version per drag step.
       expect(lineage.map { |f| f["version"] }.max).to eq(2)
       expect(second.dig("future", "parent_id")).to eq(best.fetch("id"))
     end

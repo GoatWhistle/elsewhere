@@ -1,4 +1,3 @@
-# Private to packs/supply. Records never cross a package boundary — Supply::Catalog hands out value objects.
 class DestinationRecord < ActiveRecord::Base
   self.table_name = "destinations"
 

@@ -1,4 +1,3 @@
-# Private to packs/supply.
 class DestinationClimateNormalRecord < ActiveRecord::Base
   self.table_name = "destination_climate_normals"
 

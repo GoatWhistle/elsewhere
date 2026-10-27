@@ -76,12 +76,10 @@ describe("ForecastPanel", () => {
     expect(card.getByText(/Шум никто не измерял/)).toBeVisible();
     expect(noise).toHaveClass("risk-card--inference");
 
-    // Evidence with its source and recency, not a bare claim.
     expect(card.getByText("гео-измерение")).toBeVisible();
     expect(card.getByText(/Ближайшая крупная дорога: 180 м/)).toBeVisible();
     expect(card.getByText(/наблюдение от 20 авг\. 2026/)).toBeVisible();
 
-    // Severity and confidence are read as two separate axes.
     expect(card.getByText("Серьёзность").parentElement).toHaveTextContent("высокая");
     expect(card.getByText("Уверенность").parentElement).toHaveTextContent("50%");
     expect(card.getByText(/Задевает предпочтение:/)).toHaveTextContent("Тишина");

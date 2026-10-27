@@ -4,14 +4,10 @@ require_relative "candidates"
 require_relative "assembly"
 
 module Planning
-  # The only mutation path for a Future (DEC-025). Sliders, natural language and applied mitigations all
-  # arrive here, so nothing else grows its own copy of the pricing and scoring logic.
   module SimulatorCore
-    # No dimension in the top three by weight may lose more than this in one operation.
     EPSILON = 0.05
     PROTECTED_COUNT = 3
 
-    # A drag that lands within this window and moves the same dimensions is the same drag.
     COALESCE_SECONDS = 90
 
     module_function
@@ -26,8 +22,6 @@ module Planning
       requested, protect, outcome = resolve(adjustments, instruction, response)
       return unchanged(original, outcome) if requested.empty?
 
-      # "Cheaper" moves the target total, and without a stated budget the only real total is this trip's own
-      # price. Seeding from there keeps the step anchored to a number that exists.
       seeded = seed_budget(dna, original, requested)
       adjusted = seeded.merge("elements" => Adjustments.apply(seeded["elements"], requested))
       constraints = Constraints.from(adjusted, date_window: session["_date_window"], party: session["_party"])
@@ -35,10 +29,8 @@ module Planning
 
       resolved, blocked = re_solve(session, adjusted, constraints, months)
       return no_solution(original, requested, constraints, blocked) if resolved.nil?
-      # A version identical to its parent is not a simulation, it is a no-op wearing a version number.
       return nothing_to_change(original, requested) if same_trip?(original, resolved)
 
-      # ε is a refusal, not a fudge: a move that damages something the user leans on is priced, not made quietly.
       damage = epsilon_breach(original, resolved, dna)
       return refusal(original, resolved, damage, requested) if protect && damage
 
@@ -63,7 +55,6 @@ module Planning
         original["check_in"] == resolved["check_in"] && original["check_out"] == resolved["check_out"]
     end
 
-    # Not a failure of the request, a fact about the corpus: from here, there is nothing to move to.
     def nothing_to_change(_original, requested)
       moves = requested.map { |adjustment| adjustment["dimension"] }.join(", ")
       {
@@ -86,9 +77,6 @@ module Planning
       [parsed, protect, outcome]
     end
 
-    # Weight and target changes re-solve over existing candidates; only dates and destinations return to Supply
-    # (DEC-025). Returns [best, blocked], where `blocked` records what the final gate turned away, so a refusal
-    # can name the step that did the cutting.
     def re_solve(session, adjusted, constraints, months)
       shortlist = Candidates.shortlist(adjusted, constraints, months: months)
       return [nil, []] if shortlist.empty?
@@ -112,7 +100,6 @@ module Planning
       [priced.min_by { |assembled| Match.ranking_key(assembled["candidate"].match) }, blocked]
     end
 
-    # The three dimensions this traveller leans on hardest, and whether any of them just lost too much.
     def epsilon_breach(original, resolved, dna)
       protected_dimensions = Array(dna["elements"]).reject { |e| e["weight"].nil? }
                                                    .sort_by { |e| -e["weight"].to_f }
@@ -174,11 +161,8 @@ module Planning
       DnaStore.update(session_id: session["id"], elements: adjusted["elements"])
     end
 
-    # ---- versions -----------------------------------------------------------------------------------------
-
     def signature(requested) = Digest::SHA1.hexdigest(requested.map { |a| a["dimension"] }.sort.join(","))
 
-    # A dragged slider is one version, not one per pixel: the superseded intermediate is removed, never updated.
     def build_version(session, adjusted, original, resolved, requested)
       drag = signature(requested)
       superseded = coalescible(original, drag)

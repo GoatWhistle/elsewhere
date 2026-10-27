@@ -1,8 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Supply::RateValidation do
-  # The real thing on both sides: the 84 calibration rows the model produced, and the observed price levels the
-  # harvest actually collected. Validating the model against invented numbers would prove nothing about it.
   let(:calibrations) { JSON.parse(Rails.root.join("packs/supply/fixtures/price_calibrations.json").read) }
   let(:price_levels) do
     JSON.parse(Rails.root.join("packs/supply/fixtures/corpus_profile.json").read)
@@ -41,7 +39,6 @@ RSpec.describe Supply::RateValidation do
     expect(check["detail"]).to include("AER ×1.78")
   end
 
-  # A validation that cannot fail proves nothing, so each check is shown catching the thing it is for.
   describe "each check can actually fail" do
     def broken(rows) = described_class.report(calibrations: rows, price_levels: price_levels)
 
@@ -73,10 +70,6 @@ RSpec.describe Supply::RateValidation do
     end
   end
 
-  # OQ-A's "calibrated on the price levels observed for *that* property, not a global formula" is checked here
-  # rather than in the report, because in the report it could not fail: with rate = base × factor it is
-  # arithmetic. End to end through two real properties it can — a city average instead of the property's own
-  # observed level would break it immediately.
   describe "the base is the property's own, not the city's" do
     it "gives two properties in one city rates in the ratio of their observed levels" do
       dear = Supply::Catalog.property(id: "prop-sochi-sea")
@@ -93,8 +86,6 @@ RSpec.describe Supply::RateValidation do
 
   describe "what this cannot check" do
     it "does not claim the seasonality itself was verified" do
-      # The base is observed; the seasonality is a hypothesis, and no free source has dated prices to test it
-      # against (DEC-016), nor did the lead want them collected by hand (DEC-029). Saying so is the honest part.
       rate = Supply::Rates.for(property_id: "prop-sochi-sea", check_in: "2026-07-08", check_out: "2026-07-15",
                                adults: 2)
 

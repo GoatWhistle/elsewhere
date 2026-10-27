@@ -1,15 +1,9 @@
 module Foresight
   module Rules
-    # Road proximity as a proxy for night noise, and the one rule that must never read as a measurement: we
-    # measured a distance to a road, not noise, and nobody said their room faces the street. `model_inference`
-    # is the honest label.
     module NightNoise
       RISK_TYPE = "night_noise".freeze
       DIMENSION = "quiet".freeze
 
-      # Distance at which each road class stops being a plausible source of night noise: a trunk road carries
-      # further than a residential street, so one distance for all classes is wrong both ways. Thresholds,
-      # not measurements (OQ-D).
       THRESHOLD_M = { "motorway" => 500, "trunk" => 500, "primary" => 300,
                       "secondary" => 150, "tertiary" => 100 }.freeze
       DEFAULT_THRESHOLD_M = 75

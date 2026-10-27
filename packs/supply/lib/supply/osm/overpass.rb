@@ -5,16 +5,10 @@ require_relative "../page_cache"
 
 module Supply
   module Osm
-    # Overpass: a bounded, one-time extract per corpus city. Not the OSM main API, whose policy states it is
-    # not for read-only projects. A bbox around one city, filtered to the tags we need, fetched once and kept
-    # on disk — never a lookup at request time. Geofabrik's smallest Russian unit is a federal district,
-    # hundreds of megabytes of PBF with no reader in this Gemfile.
     module Overpass
       ENDPOINT = "https://overpass-api.de/api/interpreter".freeze
       STATUS = "https://overpass-api.de/api/status".freeze
 
-      # Two slots per client, 429 when both are busy. Shared infrastructure paid for by others: the interval is
-      # generous and a refusal is respected.
       MIN_INTERVAL_S = 12.0
 
       Result = Struct.new(:elements, :from_cache, :error, keyword_init: true) do
@@ -48,9 +42,6 @@ module Supply
         Result.new(elements: [], error: "unparseable Overpass answer: #{e.message}")
       end
 
-      # Busy, not refusing. 429 means both slots are in use and the service publishes when the next one frees;
-      # 502/503/504 mean its dispatcher is overloaded. Waiting is the documented way to use it — unlike the
-      # harvest, where a 429 is bot protection and means stop.
       BUSY = [429, 502, 503, 504].freeze
 
       def with_slot(attempts: 3)
@@ -73,7 +64,6 @@ module Supply
         seconds ? seconds + 2 : default
       end
 
-      # A bbox as Overpass writes it: south,west,north,east.
       def bbox(south, west, north, east) = format("%.5f,%.5f,%.5f,%.5f", south, west, north, east)
     end
   end

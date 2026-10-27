@@ -22,8 +22,6 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
     patch "/planning-sessions/#{session.fetch("id")}/travel-dna", params: { elements: confirmed }, as: :json
     expect(response).to have_http_status(:ok)
     get "/planning-sessions/#{session.fetch("id")}"
-    # PATCH is an upsert by dimension (B-2): editing two elements confirms those two and erases none of the
-    # rest. Phase 0's stub replaced the whole set, and this assertion used to encode that.
     updated = response.parsed_body.dig("travel_dna", "elements")
     expect(updated.size).to eq(all_elements.size)
     expect(updated.select { |element| element["provenance"] == "confirmed" }.size).to eq(2)
@@ -35,12 +33,6 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
 
     get "/planning-sessions/#{session.fetch("id")}/futures"
     futures = response.parsed_body.fetch("futures")
-    # One, not three, and the note accounts for every missing option rather than leaving the set unexplained.
-    # Sochi is the one destination Ignav really covers and its fare comes back in USD while the room rate is
-    # modeled in RUB, so both Sochi candidates are refused rather than summed with an invented exchange rate.
-    # Of what remains, Saint Petersburg sits 0.13 of match below the best — below archetype C's floor — and
-    # padding the set with it would be dishonest. Each of those is a decision this suite is pinning, not an
-    # accident; when the FX question is answered the count changes and this changes with it.
     expect(futures.size).to eq(1)
     note = response.parsed_body.fetch("diversity_note")
     expect(note).to include("разные валюты")
@@ -55,8 +47,6 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
     expect(response).to have_http_status(:accepted)
     result = response.parsed_body.fetch("result")
 
-    # On this corpus there is nothing cheaper to move to, and the simulator says so instead of handing back a
-    # version identical to its parent. Both branches are walked here because both are real answers.
     if result.fetch("kind") == "future"
       simulated = result.fetch("future")
       expect(simulated.fetch("parent_id")).to eq(future.fetch("id"))

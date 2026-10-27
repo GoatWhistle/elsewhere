@@ -1,7 +1,5 @@
 class CreateFlightFareSnapshots < ActiveRecord::Migration[8.1]
   def change
-    # A fare is the only paid dependency in this system (DEC-028): about 24 requests per generation, roughly
-    # forty generations on the free quota. So every answer is kept, keyed by exactly what was asked.
     create_table :flight_fare_snapshots, id: :uuid do |t|
       t.string :origin, null: false               # IATA *airport* code — city codes are rejected (A-0)
       t.string :destination, null: false
@@ -19,8 +17,6 @@ class CreateFlightFareSnapshots < ActiveRecord::Migration[8.1]
       t.string :booking_url
       t.string :provider_itinerary_id
 
-      # What the provider actually had for this route, kept because absence is the interesting part here:
-      # A-0 found no direct service into or out of Russia at all.
       t.integer :itineraries
       t.boolean :direct_service
       t.jsonb :unassessed, null: false, default: {}

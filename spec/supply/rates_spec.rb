@@ -1,8 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Supply::RateModel do
-  # The 84 calibration rows the model actually produced for the corpus. Asserting the guards against invented
-  # numbers would prove nothing about the rates this product will print.
   let(:real) { JSON.parse(Rails.root.join("packs/supply/fixtures/price_calibrations.json").read) }
 
   describe "the guards DEC-029 asks for" do

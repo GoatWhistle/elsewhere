@@ -8,8 +8,6 @@ RSpec.describe Supply::ClimateData do
                               centre_source: "osm_place")
   end
 
-  # Real captured Open-Meteo answers (assumption A-007), two years of them, placed in the cache the way a real
-  # refresh leaves them — so the whole aggregation runs without touching the network.
   def cache_with_real_answers(marine: true)
     cache = Supply::PageCache.new(root: Dir.mktmpdir("climate-spec"))
     archive_url = url_for(Supply::OpenMeteo::ARCHIVE,

@@ -1,12 +1,7 @@
 require_relative "assembly"
 
 module Planning
-  # What changed, itemized, and why. Sequential re-pricing: a global re-solve changes several things at once
-  # and attributing a joint change afterwards is order-dependent, so the parts would not sum. The order is
-  # fixed, the trip is re-priced after each step, and each difference is one item. No number here comes from a
-  # model — `AI::Task` is handed the arithmetic and asked only for a sentence.
   module Delta
-    # Dates first, then where, then which property. Any fixed order works; what matters is that it is fixed.
     ORDER = %i[dates destination property].freeze
 
     module_function
@@ -23,15 +18,11 @@ module Planning
         "items" => items(parent, child, currency, requested),
         "match_before" => parent.dig("match", "score"), "match_after" => child.dig("match", "score"),
         "dimension_changes" => dimension_changes(parent, child),
-        # Foresight reads Planning and not the reverse, so a Future cannot ask what risks appeared; the client
-        # fetches the forecast per version.
         "new_risks" => [], "resolved_risks" => [],
         "explanation" => Explanation.for(parent, child, requested)
       }
     end
 
-    # One item per step. The last lands on the child's own price, so items sum to the total change exactly,
-    # by construction rather than rounding.
     def items(parent, child, currency, requested)
       steps = changed_steps(parent, child)
       return [] if steps.empty?
@@ -59,7 +50,6 @@ module Planning
       end
     end
 
-    # Re-price with only the first `steps` applied; a fare is reused when destination and dates are unchanged.
     def repriced(parent, child, steps)
       check_in = steps.include?(:dates) ? child["check_in"] : parent["check_in"]
       check_out = steps.include?(:dates) ? child["check_out"] : parent["check_out"]
@@ -103,7 +93,6 @@ module Planning
       Array(future.dig("match", "contributions")).to_h { |c| [c["dimension"], c["satisfaction"]] }
     end
 
-    # Which preference was traded away: the lowest-weight dimension that actually got worse.
     def relaxed_dimension(parent, child, _requested)
       before = satisfaction_map(parent)
       after = satisfaction_map(child)
@@ -114,8 +103,6 @@ module Planning
     end
   end
 
-  # Prose over already-computed numbers: the model writes the sentence and never supplies a figure, and a
-  # templated fallback says the same when it is unavailable.
   module Explanation
     SCHEMA = { "type" => "object", "additionalProperties" => false,
                "properties" => { "sentence" => { "type" => "string" } }, "required" => ["sentence"] }.freeze

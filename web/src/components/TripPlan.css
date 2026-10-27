@@ -1,5 +1,3 @@
-/* The trip plan is a document, not a card: one column, reading measure, sections in trip order. */
-
 .trip-plan {
   max-width: 780px;
   margin: 0 auto;

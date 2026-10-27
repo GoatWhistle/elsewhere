@@ -5,9 +5,6 @@ require_relative "harvest/microdata"
 require_relative "harvest/catalogue_101"
 
 module Supply
-  # The one-time collection of the property catalogue (DEC-016). Bounded and polite, and re-runnable because
-  # every fetched page is on disk: a second pass parses from cache and sends nothing. A refusal stops the pass —
-  # no retry, no slowdown, no varied request (C-04); a smaller corpus is the accepted outcome.
   module Harvest
     Summary = Struct.new(:pages_requested, :pages_from_cache, :pages_fetched, :properties_seen,
                          :properties_written, :destinations_written, :refusals, :errors, :stopped, :cities,
@@ -19,14 +16,12 @@ module Supply
       end
     end
 
-    # A city as the caller declares it: which cities and which geography is curation, not collection.
     City = Struct.new(:slug, :city_code, :name, :country, :geography_type, :peak_season, keyword_init: true)
 
     SOURCE = "101hotels".freeze
 
     module_function
 
-    # `offline: true` skips a cache miss instead of fetching it, so `db:seed` never starts a web harvest.
     def run(cities:, categories: [], refresh: false, cache: PageCache.new, persist: true,
             offline: false, log: nil)
       summary = Summary.new(pages_requested: 0, pages_from_cache: 0, pages_fetched: 0, properties_seen: 0,
@@ -55,8 +50,6 @@ module Supply
       landing = page(Catalogue101.city_url(city.slug), refresh, cache, offline, summary, log)
       return [] unless landing
 
-      # Named slices, not whatever the page links first: alphabetical order sampled 1–2 stars in one city and
-      # 4–5 in another, so the price axis measured the sampling. Every city gets the same slices or none.
       pages = [landing]
       available = Catalogue101.categories_on(landing, city.slug)
       (categories & available).each do |category|
@@ -66,13 +59,11 @@ module Supply
         pages << body if body
       end
 
-      # A property repeats across slices; `source_id` is the source's own id, so dedup is exact, not by name.
       pages.flat_map { |body| Microdata.lodgings(body) }
            .reject { |record| record[:source_id].to_s.empty? }
            .uniq { |record| record[:source_id] }
     end
 
-    # Returns the page body, or nil — and sets `summary.stopped` if the source refused us, which ends the pass.
     def page(url, refresh, cache, offline, summary, log)
       path = URI.parse(url).path
       unless Catalogue101.allowed?(path)
@@ -123,8 +114,6 @@ module Supply
         geography_type: city.geography_type, peak_season: city.peak_season
       )
 
-      # No city centre is published here, so this pass offers the centroid of what it harvested and says so in
-      # `centre_source`. It must never replace the real OSM place node with it.
       if destination.centre_source.nil? || destination.centre_source == "property_centroid"
         destination.assign_attributes(lat: median(points.map(&:first)), lon: median(points.map(&:last)),
                                       centre_source: "property_centroid")
@@ -136,7 +125,6 @@ module Supply
       end
     end
 
-    # One unusable row must not end the pass; failures are counted and named, never swallowed.
     def guarded(summary, log, what)
       yield
     rescue StandardError => e

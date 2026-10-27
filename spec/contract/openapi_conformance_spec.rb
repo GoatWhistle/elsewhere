@@ -1,11 +1,6 @@
 require "rails_helper"
 require "yaml"
 
-# The contract is frozen in docs/04_api/openapi.yaml, but nothing used to enforce it: the schema could change and
-# every spec would stay green, because responses were checked field by field, by hand. Four people building in
-# parallel would then discover the drift at the demo.
-#
-# This walks the journey once and validates each response against the schema the contract declares for it.
 RSpec.describe "OpenAPI conformance", type: :request do
   let(:document) { YAML.safe_load_file(Rails.root.join("docs/04_api/openapi.yaml"), aliases: true) }
 
@@ -50,8 +45,6 @@ RSpec.describe "OpenAPI conformance", type: :request do
     job = JSON.parse(response.body)
     conform!(job, "Job")
 
-    # Both outcomes are contract shapes and both are real: on this corpus there is genuinely nothing cheaper,
-    # so the simulator refuses and says why rather than returning a version identical to its parent.
     result = job.fetch("result")
     case result.fetch("kind")
     when "future" then conform!(result.fetch("future"), "Future")

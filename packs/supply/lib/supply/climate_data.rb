@@ -2,18 +2,11 @@ require "date"
 require_relative "open_meteo"
 
 module Supply
-  # Climate normals per destination and month, plus the forecast. Normals are aggregated once from daily
-  # history and stored; the forecast is fetched on demand with a short maximum age. Different kinds of fact,
-  # labelled `cached` against `live`.
   module ClimateData
-    # The most recent thirty years rather than WMO's 1991–2020: a normal ending five years ago understates a
-    # warming trend.
     AIR_YEARS = ((Date.today.year - 30)..(Date.today.year - 1)).freeze
 
-    # The marine archive starts in 2023, so the sea figure is a three-year mean and says so.
     SEA_FROM = Date.new(2023, 1, 1)
 
-    # A rain day is ≥ 1 mm; every source picks its own threshold, so the number needs one stated.
     RAIN_DAY_MM = 1.0
 
     Summary = Struct.new(:destinations, :months, :with_sea, :errors, :notes, keyword_init: true) do
@@ -79,8 +72,6 @@ module Supply
       log&.call("#{destination.city_code}: 12 months#{sea_by_month.empty? ? " (no sea temperature)" : ""}")
     end
 
-    # Mean of daily values per calendar month across the window. Precipitation is summed per year-month first,
-    # because a monthly total is what a reader pictures.
     def monthly_air(daily)
       buckets = Hash.new { |hash, key| hash[key] = { mean: [], min: [], max: [], wet: 0, days: 0 } }
       yearly_precipitation = Hash.new(0.0)
@@ -107,7 +98,6 @@ module Supply
         [month, {
           mean: average(bucket[:mean]), min: average(bucket[:min]), max: average(bucket[:max]),
           precipitation_mm: totals.empty? ? nil : (totals.sum / totals.length).round(1),
-          # Days per month, not per window: the count is scaled back by however many years contributed.
           rain_days: bucket[:days].zero? ? nil : (bucket[:wet].to_f / years).round(1)
         }]
       end
@@ -137,7 +127,6 @@ module Supply
         "temp_mean_c" => record.temp_mean_c&.to_f, "temp_min_c" => record.temp_min_c&.to_f,
         "temp_max_c" => record.temp_max_c&.to_f, "rain_days" => record.rain_days&.to_f,
         "precipitation_mm" => record.precipitation_mm&.to_f, "sea_temp_c" => record.sea_temp_c&.to_f,
-        # Two windows, named, because they are not the same claim.
         "air_years" => "#{record.air_years_from}–#{record.air_years_to}",
         "sea_years" => (record.sea_years_from && "#{record.sea_years_from}–#{record.sea_years_to}"),
         "rain_day_threshold_mm" => RAIN_DAY_MM,

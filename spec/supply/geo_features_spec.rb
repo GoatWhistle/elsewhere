@@ -12,7 +12,6 @@ RSpec.describe Supply::GeoFeatures do
                            source_url: "https://example.invalid", harvested_at: Time.current)
   end
 
-  # osm_features has no ActiveRecord model on purpose, so the spec writes it the way the importer does.
   def osm(layer, osm_id, geometry, tags = {})
     ActiveRecord::Base.connection.execute(<<~SQL)
       INSERT INTO osm_features (city_code, layer, osm_type, osm_id, tags, imported_at, geom)

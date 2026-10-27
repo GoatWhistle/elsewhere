@@ -30,13 +30,10 @@ module Planning
     def create(dream_text:, origin:, date_window:, party:)
       id = Elsewhere::Store.id
       draft = TravelDna.draft(dream_text, date_window, party)
-      # The stored version is the record; the draft still carries its unanswered questions.
       dna = DnaStore.create(session_id: id, dna: draft).merge("_clarifications" => draft["_clarifications"])
-      # Clarifications belong to the session, not the DNA: questions not yet asked, not beliefs about the user.
       session = { "id" => id, "created_at" => now, "dream_text" => dream_text, "travel_dna" => TravelDna.without_internals(dna),
                   "clarifications" => dna["_clarifications"] || [], "_origin" => origin,
                   "_date_window" => date_window, "_party" => party,
-                  # Surfaced rather than acted on: a DNA the model never saw is not the same fact as one it did.
                   "_dna_degraded" => dna["_degraded"], "_dna_degraded_reason" => dna["_degraded_reason"] }
       Elsewhere::Store.save_session(session)
     end
@@ -47,15 +44,12 @@ module Planning
   module TravelDna
     module_function
 
-    # Published lookup for holders of the version id a Future carries; records stay internal to Planning.
     def find(version_id:) = DnaStore.find_version(version_id)
 
-    # Party is a fact about the trip and lives on the session, not a Travel DNA dimension.
     def draft(dream, date_window, _party)
       parsed = DreamParser.parse(dream)
       elements = parsed.elements.dup
 
-      # Dates become a hard constraint; the party never becomes a dimension, and the contract spec asserts it.
       elements = elements.reject { |element| element["dimension"] == "dates" } +
                  [DreamParser.element("dates", date_window, "stated", DreamParser::NAMED)] if date_window
 
@@ -67,14 +61,11 @@ module Planning
 
     INTERNAL_KEYS = %w[_clarifications _degraded _degraded_reason].freeze
 
-    # Internal bookkeeping never crosses the serialization boundary; the conformance spec fails when it does.
-    # Not named `public`: that is Module#public, and shadowing it makes the method private on the singleton.
     def without_internals(dna)
       dna.reject { |key, _| INTERNAL_KEYS.include?(key) }
          .merge("elements" => Array(dna["elements"]).map { |element| element.reject { |key, _| key.start_with?("_") } })
     end
 
-    # An upsert by dimension that produces a new version. Editing one field must not erase the rest.
     def update(session_id:, elements:)
       dna = DnaStore.update(session_id: session_id, elements: elements)
       session = Sessions.find(id: session_id)
@@ -83,7 +74,6 @@ module Planning
       session["travel_dna"]
     end
 
-    # Answering removes that question only; wiping the list would lose the ones not yet asked.
     def answer_clarifications(session_id:, answers:)
       session = Sessions.find(id: session_id)
       answered = Array(answers).map { |answer| (answer["id"] || answer[:id]).to_s }
@@ -96,8 +86,6 @@ module Planning
       session["travel_dna"]
     end
 
-    # Only dimension answers change the DNA. Party and dates live on the session, and `budget_hard` says
-    # whether an existing element is a ceiling, not what it is.
     def clarification_element(answer)
       id = (answer["id"] || answer[:id]).to_s
       value = answer.key?("value") ? answer["value"] : answer[:value]
@@ -143,14 +131,12 @@ module Planning
                                                               party: session["_party"], fares: fares, budget: budget)
         next if assembled.nil?
         next assembled if assembled["refused"]
-        # The final gate: a violation removes a candidate, it never lowers a score.
         next unless Constraints.violations(assembled, constraints).empty?
 
         assembled
       end
     end
 
-    # Why the set looks the way it does. Never padded to three, and never silently short either.
     def diversity_note(futures, refused, selection_note)
       reasons = refused.map { |item| item["refused"] }.uniq
       return nil if futures.length >= 3 && reasons.empty?
@@ -172,15 +158,12 @@ module Planning
       { "kind" => "no_solution", "no_solution" => Constraints.no_candidates(rejections, constraints) }
     end
 
-    # FutureSet: the Futures plus why the set is the shape it is (see provider_adapters.md).
     def list(session_id:)
       { "futures" => Elsewhere::Store.futures_for_session(session_id),
         "diversity_note" => Sessions.find(id: session_id)&.dig("_diversity_note") }
     end
     def find(future_id:) = Elsewhere::Store.find_future(future_id)
 
-    # `session_id` indexes a Future in the store and is not in the contract, so it is stripped at the
-    # serialization boundary; the conformance spec fails when it leaks.
     INTERNAL_KEYS = %w[session_id _drag].freeze
     def public(future); future && future.reject { |key, _| INTERNAL_KEYS.include?(key) }; end
 
@@ -219,7 +202,6 @@ module Planning
       }
     end
 
-    # Straight off the decomposition: what this candidate is good at, and where it pays for it.
     def benefits(candidate)
       candidate.match["contributions"].select { |c| c["satisfaction"] >= 0.75 }
                .sort_by { |c| -c["contribution"] }.first(3).map { |c| c["explanation"] }
@@ -236,8 +218,6 @@ module Planning
   module Simulator
     module_function
 
-    # The single entry point for any modification of a Future — sliders, natural language and applied
-    # mitigations all route through here.
     def simulate(future_id:, adjustments: nil, instruction: nil, persist_to_dna: false)
       SimulatorCore.simulate(future_id: future_id, adjustments: adjustments, instruction: instruction,
                              persist_to_dna: persist_to_dna)

@@ -79,7 +79,6 @@ RSpec.describe Planning::DnaStore do
   end
 
   describe "no cascades" do
-    # walkability and transfer_simplicity are inferred from car_free by the parser.
     it "marks an inference whose basis the user removed, instead of re-weighting it" do
       before = dimensions(described_class.find(session_id))
       expect(before["transfer_simplicity"]).to include("provenance" => "inferred")
@@ -91,7 +90,6 @@ RSpec.describe Planning::DnaStore do
 
       expect(after["transfer_simplicity"]["provenance"]).to eq("default")
       expect(after["transfer_simplicity"]["confidence"]).to eq(0.3)
-      # Shown, not silently repaired: the weight is exactly where it was.
       expect(after["transfer_simplicity"]["weight"]).to eq(weight_before)
     end
 
@@ -118,7 +116,6 @@ RSpec.describe Planning::DnaStore do
                              elements: [{ "dimension" => "walkability", "kind" => "preference",
                                           "target" => "low", "weight" => 0.1 }])
 
-      # Re-running the merge with the inference still present must not undo the edit.
       after = dimensions(described_class.update(session_id: session_id, elements: []))
 
       expect(after["walkability"]).to include("provenance" => "confirmed", "target" => "low", "weight" => 0.1)
@@ -126,8 +123,6 @@ RSpec.describe Planning::DnaStore do
   end
 
   describe "answering a clarification" do
-    # car_free is only asked about when it was *inferred* — here, from a Dream that is all about walking and
-    # never mentions a car. Someone who wants to walk may still rent one.
     let(:walker) do
       Planning::Sessions.create(dream_text: "Хотим всё обходить пешком и вкусно есть", origin: "MOW",
                                 date_window: { "earliest" => "2026-07-01", "latest" => "2026-07-31" },

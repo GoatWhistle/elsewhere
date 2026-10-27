@@ -6,15 +6,9 @@ require "zlib"
 require "stringio"
 
 module Supply
-  # The single outward door: every external call goes through here, which makes "only Supply talks to the
-  # outside world" checkable. Two guarantees. It never raises — a refusal, a timeout and a DNS failure all come
-  # back as a Response with `error` set (provider_adapters.md, rule 2). And the per-host minimum interval is
-  # enforced here rather than remembered by each caller.
   module Http
     USER_AGENT = "ElsewhereResearch/0.1 (trip-planning prototype; one-time catalogue pass; +https://github.com/elsewhere)".freeze
 
-    # Codes that mean stop, not try again: retrying or disguising the request would circumvent bot protection
-    # (C-04).
     REFUSAL = [401, 402, 403, 405, 418, 429].freeze
 
     Response = Struct.new(:url, :status, :body, :headers, :error, :elapsed_s, keyword_init: true) do
@@ -36,7 +30,6 @@ module Supply
       request(:get, url, headers: headers, timeout: timeout, min_interval: min_interval)
     end
 
-    # Form-encoded, for services whose API predates JSON bodies — Overpass takes `data=<query>`.
     def post_form(url, fields, headers: {}, timeout: 60, min_interval: 1.0)
       body = URI.encode_www_form(fields)
       request(:post, url, headers: headers.merge("Content-Type" => "application/x-www-form-urlencoded"),
@@ -57,7 +50,6 @@ module Supply
       Response.new(url: url, status: response.code.to_i, body: decode(response),
                    headers: response.each_header.to_h, elapsed_s: (monotonic - started).round(3))
     rescue StandardError => e
-      # Timeout::Error, SocketError, OpenSSL errors and whatever a proxy invents: nothing escapes.
       Response.new(url: url, status: nil, body: nil, headers: {},
                    error: "#{e.class}: #{e.message}", elapsed_s: (monotonic - (started || monotonic)).round(3))
     end
@@ -84,7 +76,6 @@ module Supply
       raw
     end
 
-    # One host, one queue. Sleeping here rather than in the caller keeps politeness out of each adapter.
     def throttle!(host, min_interval)
       return if min_interval.to_f <= 0
 

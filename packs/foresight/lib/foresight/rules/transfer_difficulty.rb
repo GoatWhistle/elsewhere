@@ -1,14 +1,9 @@
 module Foresight
   module Rules
-    # How much of the trip is spent getting from the airport to the bed. `derived_metric` on a straight-line
-    # distance, which is a floor on the journey rather than the journey; a real ORS driving time makes the
-    # claim stronger, but a distance alone never becomes `verified_fact`.
     module TransferDifficulty
       RISK_TYPE = "transfer_difficulty".freeze
       DIMENSION = "transfer_simplicity".freeze
 
-      # Beyond this the transfer stops being a detail and becomes part of the trip; 40 km is roughly where that
-      # starts on the roads this corpus sits on (OQ-D).
       THRESHOLD_M = 40_000
       THRESHOLD_MIN = 60
 

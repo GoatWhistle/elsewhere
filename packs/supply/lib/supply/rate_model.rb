@@ -2,37 +2,22 @@ require "bigdecimal"
 require "date"
 
 module Supply
-  # The room rate (DEC-029): observed base level × seasonal factor (climate + popularity) × nights.
-  # Only the base is observed — "busier season costs more" is a hypothesis, so the wording is "base observed,
-  # seasonality modeled", never "calibrated on observed prices". The one synthetic number in the product.
-  # `freshness` has no `modeled` value: `cached` says the calibration inputs came from stored data, while
-  # `basis: "modeled"` identifies the output. Deterministic: a stored row per destination and month times an
-  # integer, so a Simulator delta cannot drift on its own.
   module RateModel
-    # Bump when the formula changes: old calibrations stay readable and every Rate names the one that made it.
     VERSION = "seasonal-v2".freeze
 
-    # The bounds DEC-029 asks for. A factor cannot leave them whatever the inputs do.
     FACTOR_MIN = 0.70
     FACTOR_MAX = 1.60
 
-    # How far the factor may swing. Popularity does not move the price on its own; it sets how seasonal a
-    # place is.
     AMPLITUDE_MIN = 0.15
     AMPLITUDE_MAX = 0.45
     MODELED_FRESHNESS = "cached".freeze
 
-    # Reviews per property at which a destination is half-way to "busy". Fixed: a denominator drawn from the
-    # current corpus would rescore every existing Future as the corpus grew.
     POPULARITY_HALF_SATURATION = 300.0
 
-    # A 25 °C annual swing reaches the maximum climate contribution; a place with stable weather cannot reach
-    # the seasonal range of one whose climate actually moves.
     SEASONAL_RANGE_REFERENCE_C = 25.0
 
     module_function
 
-    # Builds one calibration row per destination and month. Cheap and local — climate normals are already stored.
     def calibrate!(city_codes: nil, log: nil)
       written = 0
 
@@ -76,14 +61,11 @@ module Supply
       written
     end
 
-    # How much this month suits this destination, 0 to 1. Read against the destination's own annual range, and
-    # directed by the declared `peak_season`: for a ski resort the comfortable month is the cold one.
     def comfort_for(normal, temperatures, peak_season, sea_temperatures: nil)
       low, high = temperatures.minmax
       return 0.5 if (high - low).abs < 0.01
 
       warmth = (normal.temp_mean_c.to_f - low) / (high - low)
-      # A sea destination sells the water, not the air, so the sea leads where we have measured it.
       if normal.sea_temp_c
         sea = sea_warmth(normal, sea_temperatures)
         warmth = (0.4 * warmth) + (0.6 * sea) if sea
@@ -137,7 +119,6 @@ module Supply
       factors.empty? ? "-" : "#{factors.min}–#{factors.max}"
     end
 
-    # Nights are priced one at a time, so a stay crossing a month boundary is exact.
     def for(property_id:, check_in:, check_out:, adults: 1)
       property = PropertyRecord.find_by(catalogue_id: property_id)
       return unavailable("unknown property #{property_id}") unless property
@@ -169,13 +150,11 @@ module Supply
 
       {
         "amount" => { "amount_minor" => total, "currency" => property.price_currency || "RUB" },
-        # The one synthetic number in this product, and it says so everywhere it appears (rule 7).
         "basis" => "modeled",
         "calibration" => { "model_version" => VERSION, "city_code" => property.city_code,
                            "seasonal_factor_mean" => mean.round(3), "nights" => nights,
                            "observed_base_minor" => base,
                            "statement" => "the base is observed; the seasonality is modeled" },
-        # Enough to answer "why this number": base, factor per night, and the split.
         "explanation" => {
           "observed_base_minor" => base, "nights" => nights,
           "seasonal_change_pct" => ((mean - 1) * 100).round,
@@ -183,7 +162,6 @@ module Supply
         },
         "handoff_url" => property.source_url,
         "freshness" => MODELED_FRESHNESS,
-        # A room is a room: the base is per room per night, and party size does not change it here.
         "unassessed" => adults.to_i > 1 ? { "occupancy" => "the observed base is per room; it is not adjusted for party size" } : {}
       }
     end

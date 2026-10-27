@@ -1,6 +1,4 @@
 module Planning
-  # The only four questions this system may interrupt with — a closed list. Asked when impact × ambiguity is
-  # high, always with the reason.
   module Clarifications
     module_function
 
@@ -15,7 +13,6 @@ module Planning
       ].compact
     end
 
-    # Asked only when inferred: a hard constraint nobody stated must be confirmed before it disqualifies.
     def car_free(by_dimension)
       element = by_dimension["car_free"]
       return nil if element.nil? || element["provenance"] == "stated"
@@ -50,7 +47,6 @@ module Planning
       }
     end
 
-    # A named budget is a number; whether it is a ceiling is a different question with costly answers.
     def budget_ceiling(by_dimension)
       return nil unless by_dimension["total_budget"]
 

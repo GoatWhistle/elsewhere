@@ -2,30 +2,21 @@ require "json"
 require "bigdecimal"
 
 module Supply
-  # Fares in fixture mode, from real captured Ignav responses: inventing a response shape would make the
-  # adapter boundary fiction, so every file here is one the provider sent, byte for byte. The corpus is larger
-  # than the captured routes, so an uncaptured route answers as a placeholder that says so, never as observed.
   module FlightFixtures
     DIRECTORY = File.expand_path("../../fixtures/ignav", __dir__).freeze
 
-    # Captured route → file, all at the default market, the only one returning the carriers that fly these
-    # routes; `market_ru/` holds the set that does not, kept as evidence for the research log. Moscow's
-    # airports stay apart: SVO has no nonstop to Sochi while DME and VKO do, and collapsing them would price a
-    # 17-hour connection via Abu Dhabi as the answer.
     CAPTURES = {
       %w[SVO AER] => "SVO_AER", %w[DME AER] => "DME_AER", %w[VKO AER] => "VKO_AER",
       %w[SVO IST] => "SVO_IST", %w[LHR BCN] => "LHR_BCN"
     }.freeze
     ROUND_TRIP = { %w[LHR BCN] => "LHR_BCN_rt" }.freeze
 
-    # Stand-ins for uncaptured routes, kept so the walking skeleton still walks.
     PLACEHOLDER_MINOR = { "AER" => 3_200_000, "MRV" => 2_500_000, "AAQ" => 2_800_000,
                           "KGD" => 2_400_000, "KZN" => 1_900_000, "NOZ" => 4_100_000 }.freeze
     PLACEHOLDER_DEFAULT = 1_800_000
 
     module_function
 
-    # A city code expands the way live mode expands it, and the best of the three wins — see above.
     CITY_AIRPORTS = { "MOW" => %w[DME SVO VKO] }.freeze
 
     def price(origin:, destination:, depart_on:, return_on: nil, adults: 1, **options)
@@ -88,7 +79,6 @@ module Supply
         "amount" => { "amount_minor" => (PLACEHOLDER_MINOR[route.last] || PLACEHOLDER_DEFAULT) * adults.to_i,
                       "currency" => "RUB" },
         "as_of" => nil, "carrier" => nil, "duration_min" => nil, "stops" => nil, "booking_url" => nil,
-        # Never "observed": nobody observed this.
         "basis" => "modeled", "freshness" => "fixture",
         "coverage" => { "assessed" => false,
                         "reason" => "Phase 0 placeholder — no captured Ignav response for #{route.join("→")}" },
@@ -98,7 +88,6 @@ module Supply
 
     def load(file) = JSON.parse(File.read(File.join(DIRECTORY, "#{file}.json")))
 
-    # The date of the probe: the captures are what the provider said then, and the age is part of the fact.
     def captured_at(_file) = "2026-08-27T14:00:00Z"
   end
 end

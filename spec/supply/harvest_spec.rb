@@ -7,10 +7,6 @@ RSpec.describe Supply::Harvest do
   end
   let(:city) { { slug: "sochi", city_code: "AER", name: "Сочи", country: "Россия" } }
 
-  # A cache pre-loaded with the captured page: the pass runs end to end and sends nothing, which is also how
-  # a second real pass behaves.
-  # Every cache-backed example asserts the pass sends nothing; this makes a slip fail loudly rather than
-  # quietly harvesting a live site from the test suite.
   def forbid_network!
     allow(Supply::Http).to receive(:get) { raise "a spec must never reach the network" }
   end
@@ -67,7 +63,6 @@ RSpec.describe Supply::Harvest do
       cache = cache_with(Supply::Harvest::Catalogue101.city_url("sochi") => excerpt)
       described_class.run(cities: [city], categories: [], cache: cache)
 
-      # A-3 replaces the harvested centroid with the real OSM place node.
       DestinationRecord.find_by(city_code: "AER")
                        .update!(lat: 43.585482, lon: 39.723109, centre_source: "osm_place")
       described_class.run(cities: [city], categories: [], cache: cache)
@@ -90,7 +85,6 @@ RSpec.describe Supply::Harvest do
 
     it "follows the category slices the page itself links, in a stable order" do
       urls = { Supply::Harvest::Catalogue101.city_url("sochi") => excerpt }
-      # The three the excerpt itself links, in the order the runner takes them.
       %w[1stars 2stars 3_4_stars].each do |category|
         urls[Supply::Harvest::Catalogue101.category_url("sochi", category)] = excerpt
       end

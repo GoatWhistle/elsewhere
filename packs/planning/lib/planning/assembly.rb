@@ -2,25 +2,16 @@ require "date"
 require "time"
 
 module Planning
-  # Stage 4: dates, fares, and a whole trip. The only stage that costs money, so the bounds are structural: a
-  # fare depends on destination and dates, not on the property, so properties in one destination share one
-  # request, and at most two date pairs are tried per destination.
-  # This stage assembles and never invents. Where Supply publishes a number it is used with its provenance;
-  # where Supply publishes nothing — no transfer model, no local-mobility model — the component is absent with
-  # the fact stated rather than filled with a plausible figure.
   module Assembly
     MAX_DATE_PAIRS = 2
     DEFAULT_NIGHTS = 7
 
-    # A leg's duration is observed; its clock time is not published, so departure is a fixed reference hour and
-    # arrival follows from the duration. The one constructed value in the trip.
     DEPARTURE_HOUR_UTC = 10
 
     Budget = Struct.new(:fare_requests, keyword_init: true)
 
     module_function
 
-    # Two date pairs in the window — earliest, and one shifted — so "shift the dates and save" has a comparison.
     def date_pairs(constraints, nights: nil)
       nights ||= constraints.min_nights || DEFAULT_NIGHTS
       window = constraints.date_window
@@ -58,7 +49,6 @@ module Planning
       best
     end
 
-    # One fare per destination and date pair, memoised for the whole generation.
     def fare_for(origin, destination, check_in, check_out, adults, fares, budget)
       key = [origin, destination, check_in.to_s, check_out.to_s, adults]
       return fares[key] if fares.key?(key)
@@ -79,8 +69,6 @@ module Planning
 
       components = [travel_component(fare), accommodation_component(rate)]
       currency = components.first["amount"]["currency"]
-      # Two currencies need an exchange rate, and nobody has decided whether that rate is observed or modeled.
-      # The candidate is refused with the reason rather than summed with an invented one.
       unless components.all? { |component| component["amount"]["currency"] == currency }
         return { "refused" => "разные валюты в одной поездке: перелёт в #{fare["amount"]["currency"]}, " \
                               "проживание в #{rate["amount"]["currency"]} — без курса их нельзя сложить",
@@ -97,8 +85,6 @@ module Planning
       }
     end
 
-    # `estimate` means an observed market price we cannot sell; a placeholder fare is not one, so the component
-    # follows the fare's own basis rather than assuming every fare was seen.
     def travel_component(fare)
       observed = fare["basis"] == "observed"
       {
@@ -137,8 +123,6 @@ module Planning
       }
     end
 
-    # Supply's duration when it has one; otherwise the note says distance is all we know, since a transfer time
-    # guessed from a straight line is a number nobody measured.
     def transfer(candidate)
       geo = Supply::Geo.features(property_id: candidate.property.catalogue_id) || {}
       minutes = geo["airport_transfer_min"]

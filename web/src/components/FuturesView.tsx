@@ -10,8 +10,6 @@ import type {
 type FuturesViewProps = {
   futures: Future[];
   diversityNote?: string | null;
-  // Choosing is what turns a comparison into a plan. Identity is by lineage, not by version: a simulated
-  // child is still the same Future the user picked.
   chosenId?: string | null;
   onChoose?: (future: Future) => void;
 };

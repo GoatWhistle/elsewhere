@@ -1,8 +1,5 @@
 require "rails_helper"
 
-# The persona suite is the product's real test, so it is walked through the HTTP layer rather than
-# the domain objects: every response is validated against the frozen contract, and every Future is checked
-# against the hard constraints its own Dream produced.
 RSpec.describe "Persona journeys", type: :request do
   let(:document) { YAML.safe_load(Rails.root.join("docs/04_api/openapi.yaml").read, aliases: true) }
   let(:personas) { JSON.parse(Rails.root.join("spec/fixtures/personas/demo_ru.json").read) }

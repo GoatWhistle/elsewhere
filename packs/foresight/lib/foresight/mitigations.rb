@@ -2,35 +2,25 @@ require_relative "rules"
 require_relative "scoring"
 
 module Foresight
-  # A fix for a risk, derived from that risk. Foresight describes a mitigation and never applies one: applying
-  # is `Planning::Simulator.simulate`, the single mutation path. Everything here returns a payload, nothing
-  # writes. The adjustment comes from the threatened dimension, `severity_after` is recomputed against a real
-  # corpus alternative, `price_change` is the gap between two quoted rates. No alternative, no mitigation.
   module Mitigations
-    # Properties to weigh up per destination: tens of rows with precomputed geo, so a local scan, not a search.
     CANDIDATE_LIMIT = 60
 
-    # Which geo measurement each risk type would have to improve, and which way is better.
     ALTERNATIVE_FEATURE = {
       "night_noise" => { field: "nearest_major_road_m", better: :higher },
       "walkability" => { field: "poi_density", better: :higher },
       "transfer_difficulty" => { field: "airport_distance_m", better: :lower }
     }.freeze
 
-    # How far to look for a month that clears the threshold; beyond a season it is a different trip.
     MONTH_WINDOW = 3
 
     module_function
 
     def for_finding(finding, evidence, future)
-      # `[value].compact`, never `Array(value)`: Array() would turn a Hash into a list of its pairs.
       case finding.risk_type
       when "weather_mismatch" then [shift_dates(finding, evidence, future)].compact
       else [swap_property(finding, evidence, future)].compact
       end
     end
-
-    # ---- a quieter, more walkable or closer property, if one actually exists ----------------------------
 
     def swap_property(finding, evidence, future)
       spec = ALTERNATIVE_FEATURE[finding.risk_type]
@@ -43,7 +33,6 @@ module Foresight
       after = severity_with(finding, features[spec[:field]].to_f)
       return nil unless better?(after, Scoring.severity(finding))
 
-      # The contract requires a price and zero would read as free, so an unquotable side means no offer.
       price = price_difference(future, evidence, alternative)
       return nil unless price
 
@@ -95,8 +84,6 @@ module Foresight
         "Разницу в цене и в совпадении посчитает симуляция при применении."
     end
 
-    # ---- or the same place at a time when the weather is what was asked for ------------------------------
-
     def shift_dates(finding, evidence, future)
       target = better_month(finding, evidence)
       return nil unless target
@@ -139,8 +126,6 @@ module Foresight
       date >> offset
     end
 
-    # ---- money, from two rates Supply actually quotes -----------------------------------------------------
-
     def price_difference(_future, evidence, alternative)
       current = rate(evidence.property_id, evidence.check_in, evidence.check_out)
       swapped = rate(alternative.catalogue_id, evidence.check_in, evidence.check_out)
@@ -159,7 +144,6 @@ module Foresight
       nil
     end
 
-    # No quote on either side means no price claim; zero would read as free.
     def difference(current, other)
       from = current && current["amount"]
       to = other && other["amount"]
@@ -168,22 +152,14 @@ module Foresight
       { "amount_minor" => to["amount_minor"] - from["amount_minor"], "currency" => from["currency"] }
     end
 
-    # ---- the adjustment itself ---------------------------------------------------------------------------
-    #
-    # Acts on the threatened dimension, harder when the risk is worse; magnitude derived from the severity band.
     MAGNITUDE = { "low" => 0.15, "medium" => 0.25, "high" => 0.4 }.freeze
 
-    # Shifting dates is the one fix not about a preference level: it names `dates` and moves forward in the year.
     def adjustment(finding, mitigation_id)
       dimension = mitigation_id.to_s.end_with?("shift_dates") ? "dates" : finding.affected_dimension
       { "dimension" => dimension, "direction" => "increase",
         "magnitude" => MAGNITUDE.fetch(Scoring.severity(finding)) }
     end
 
-    # ---- identity ----------------------------------------------------------------------------------------
-    #
-    # The interface carries only `risk_id` and `mitigation_id`, so the ids must locate the risk. Forecasts are
-    # recomputed rather than stored, which is safe because a Future is immutable.
     def risk_id(future, finding) = "#{future["id"]}:#{finding.risk_type}"
     def mitigation_id(future, finding, kind) = "#{risk_id(future, finding)}:#{kind}"
 

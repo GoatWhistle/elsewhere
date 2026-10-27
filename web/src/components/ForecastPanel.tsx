@@ -19,8 +19,6 @@ type ForecastPanelProps = {
   onFixRisk: (riskId: string, mitigationId: string) => Promise<void>;
 };
 
-// The contract's full risk vocabulary. The denominator of "оценено N из 9" comes from here and not from the
-// length of the coverage array: a type the server forgot to mention is an unchecked type, not a missing row.
 const ALL_RISK_TYPES: RiskType[] = [
   "night_noise",
   "crowds",
@@ -70,8 +68,6 @@ const SEVERITY_LABELS: Record<Severity, string> = {
 
 const SEVERITY_STEPS: Record<Severity, number> = { low: 1, medium: 2, high: 3 };
 
-// DEC-030: confidence follows from the kind of claim. The label says which kind it is, the note says what that
-// kind is worth — an inference must never be readable as a measurement.
 const CLAIM_KIND_LABELS: Record<RiskItem["claim_kind"], string> = {
   verified_fact: "измеренный факт",
   derived_metric: "расчёт по данным",
@@ -107,7 +103,6 @@ export function ForecastPanel({ forecast, isLoading, error, onFixRisk }: Forecas
     );
   }
 
-  // "Не смогли посчитать" и "посчитали, рисков нет" — разные вещи, и пользователь должен видеть, какая из них.
   if (error) {
     return (
       <PanelShell>
@@ -309,8 +304,6 @@ function EvidenceRow({ evidence }: { evidence: Evidence }) {
   );
 }
 
-// Цена и новая серьёзность стоят рядом с кнопкой, до нажатия: решение стоит денег и меняет будущее,
-// поэтому пользователь видит обе цифры прежде, чем соглашается.
 function MitigationRow({
   mitigation,
   severityBefore,
@@ -340,7 +333,6 @@ function MitigationRow({
   );
 }
 
-// DEC-031 / DEC-021: пробелы покрытия стоят рядом с рисками отдельным блоком, а не мелким шрифтом внизу.
 function CoverageBlock({ assessed, gaps }: { assessed: Coverage[]; gaps: Coverage[] }) {
   return (
     <section className="coverage-block" aria-labelledby="coverage-title">

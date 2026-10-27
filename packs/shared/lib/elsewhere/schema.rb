@@ -3,16 +3,11 @@
 require "json"
 
 module Elsewhere
-  # A small JSON Schema validator, deliberately not a gem. `AI::Task` uses it to refuse malformed model output
-  # and the contract spec uses it to refuse responses that drifted from `docs/04_api/openapi.yaml`: both are
-  # JSON that has to match a declared shape. Supports what the contract uses — $ref, allOf, oneOf, union types,
-  # object required/properties/additionalProperties, array items/minItems, enum.
   module Schema
     class Invalid < StandardError; end
 
     module_function
 
-    # `root` is the document that `$ref` pointers resolve against; omit it for self-contained schemas.
     def validate!(value, schema, root: nil, path: "$")
       return value if schema.nil? || schema == true
 
@@ -49,7 +44,6 @@ module Elsewhere
       alternatives = schema["oneOf"] || schema["anyOf"]
       return unless alternatives
 
-      # Each branch's reason: a bare "matches no alternative" sends the reader hunting.
       failures = []
       alternatives.each do |member|
         return value if valid?(value, member, root: root)

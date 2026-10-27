@@ -2,9 +2,6 @@ require "json"
 require_relative "http"
 
 module Supply
-  # OpenRouteService: the only network call in the geo pipeline, for the two things PostGIS cannot answer from
-  # an extract — how far you can walk in ten minutes, and how long the airport transfer takes by road.
-  # `ORS_API_KEY` is never committed; without it both fields come back absent with a reason, never substituted.
   module Ors
     NO_KEY = "ORS_API_KEY is not set — the walk isochrone and the transfer time were not requested".freeze
 
@@ -18,8 +15,6 @@ module Supply
     def configured? = !key.empty?
     def base = ENV.fetch("ORS_BASE_URL", "https://api.openrouteservice.org")
 
-    # Area reachable on foot within `minutes`, in m². A radius answers a different question: an island of
-    # hotels across a motorway is 400 m away and forty minutes' walk.
     def walk_isochrone_m2(lat:, lon:, minutes: 10)
       return Answer.new(reason: NO_KEY) unless configured?
 
@@ -33,7 +28,6 @@ module Supply
       area ? Answer.new(value: area.round) : Answer.new(reason: "ORS isochrone returned no area")
     end
 
-    # Driving time from the airport to the property, in minutes.
     def transfer_minutes(from:, to:)
       return Answer.new(reason: NO_KEY) unless configured?
 

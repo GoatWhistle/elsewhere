@@ -38,8 +38,6 @@ RSpec.describe Planning::Assembly do
       expect(components["accommodation"]["fulfilment"]).to eq("modeled")
       expect(components["accommodation"]["source"]).to include("observed base level")
 
-      # These two destinations have no captured Ignav fare, so their travel component is a placeholder and says
-      # so. Calling a number nobody observed an "estimate" is the one dishonest move available here.
       expect(components["travel"]["fulfilment"]).to eq("modeled")
       expect(components["travel"]["as_of"]).to be_nil
       expect(components["travel"]["source"]).to include("заглушка")
@@ -58,8 +56,6 @@ RSpec.describe Planning::Assembly do
     it "omits the transfer and mobility costs rather than inventing them" do
       kinds = future.dig("price", "components").map { |c| c["kind"] }
 
-      # Supply publishes no transfer or local-mobility model in this build. The stub filled both in with two
-      # magic numbers per city; absent and stated is the honest version.
       expect(kinds).to contain_exactly("travel", "accommodation")
       expect(future.dig("logistics", "airport_transfer", "note")).to include("не моделируются")
     end
